@@ -661,10 +661,19 @@ static int platform_match(struct device *dev, struct device_driver *drv)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct platform_driver *pdrv = to_platform_driver(drv);
+	static int __trace = 1;
+
 
 	/* Attempt an OF style match first */
-	if (of_driver_match_device(dev, drv))
+	if (of_driver_match_device(dev, drv)) {
+		printk(KERN_ERR "platform_match: succeeded to match device '%s' with driver '%s' using FDT",
+		       pdev->name, pdrv->driver.name);
+		if (unlikely(__trace)) {
+		    WARN_ON(1);
+		    __trace = 0;
+		}
 		return 1;
+	}
 
 	/* Then try to match against the id table */
 	if (pdrv->id_table)
