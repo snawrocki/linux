@@ -89,6 +89,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 
 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
 		struct exynos_pm_domain *pd;
+		struct resource res;
 
 		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
 		if (!pd) {
@@ -100,7 +101,15 @@ static __init int exynos_pm_dt_parse_domains(void)
 		if (of_get_property(np, "samsung,exynos4210-pd-off", NULL))
 			pd->is_off = true;
 		pd->name = np->name;
-		pd->base = of_iomap(np, 0);
+
+		pr_notice("%s: Configuring exynos4 power domain %s\n", __func__, np->name);
+		of_address_to_resource(np, 0, &res);
+		if (!res.start) {
+			pr_err("%s: Incorrect base address %#x - ignoring\n", __func__, res.start);
+			continue;
+		}
+		pd->base = res.start;
+
 		pd->pd.power_off = exynos_pd_power_off;
 		pd->pd.power_on = exynos_pd_power_on;
 		pd->pd.of_node = np;
