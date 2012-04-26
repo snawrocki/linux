@@ -534,43 +534,36 @@
 	pd_gps: power_domain_gps {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183ce0 0x20>;
-	       gate_mask = <0>;
 	};
 
 	pd_cam: power_domain_cam {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c00 0x20>;
-	       gate_mask = <1>;
 	};
 
 	pd_tv: power_domain_tv {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c20 0x20>;
-	       gate_mask = <4>;
 	};
 
 	pd_mfc: power_domain_mfc {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c40 0x20>;
-	       gate_mask = <4>;
 	};
 
 	pd_g2d: power_domain_gps {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c60 0x20>;
-	       gate_mask = <8>;
 	};
 
 	pd_lcd0: power_domain_lcd0 {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c60 0x20>;
-	       gate_mask = <0x10>;
 	};
 
 	pd_lcd1: power_domain_lcd1 {
 	       compatible = "samsung,exynos4210-pd";
 	       reg = <0xf8183c80 0x20>;
-	       gate_mask = <0x20>;
 	};
 
 };
