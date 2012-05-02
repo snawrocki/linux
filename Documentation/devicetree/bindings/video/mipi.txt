@@ -1,0 +1,5 @@
+Common properties of MIPI-CSI1 and MIPI-CSI2 receivers and transmitters
+
+ - data-lanes : number of differential data lanes wired and actively used in
+		communication between the transmitter and the receiver, this
+		excludes the clock lane;

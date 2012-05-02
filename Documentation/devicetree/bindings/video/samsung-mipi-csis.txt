@@ -1,0 +1,47 @@
+Samsung S5P/EXYNOS SoC MIPI-CSI2 receiver (MIPI CSIS)
+-----------------------------------------------------
+
+Required properties:
+
+- compatible - one of :
+		"samsung,s5pv210-csis",
+		"samsung,exynos4210-csis",
+		"samsung,exynos4212-csis",
+		"samsung,exynos4412-csis";
+- reg : physical base address and size of the device memory mapped registers;
+- interrupts      : should contain MIPI CSIS interrupt; the format of the
+		    interrupt specifier depends on the interrupt controller;
+- cell-index      : the hardware instance index;
+- clock-frequency : The IP's main (system bus) clock frequency in Hz, the default
+		    value when this property is not specified is 166 MHz;
+- data-lanes      : number of physical MIPI-CSI2 lanes used;
+- samsung,csis-hs-settle : differential receiver (HS-RX) settle time;
+- vddio-supply    : MIPI CSIS I/O and PLL voltage supply (e.g. 1.8V);
+- vddcore-supply  : MIPI CSIS Core voltage supply (e.g. 1.1V).
+
+Example:
+
+	reg0: regulator@0 {
+	};
+
+	reg1: regulator@1 {
+	};
+
+/* SoC properties */
+
+	csis@11880000 {
+		compatible = "samsung,exynos4210-csis";
+		reg = <0x11880000 0x1000>;
+		interrupts = <0 78 0>;
+		cell-index = <0>;
+	};
+
+/* Board properties */
+
+	csis@11880000 {
+		clock-frequency = <166000000>;
+		data-lanes = <2>;
+		samsung,csis-hs-settle = <12>;
+		vddio-supply = <&reg0>;
+		vddcore-supply = <&reg1>;
+	};
