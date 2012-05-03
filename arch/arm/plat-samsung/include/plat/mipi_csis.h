@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2011 Samsung Electronics Co., Ltd.
+ * Copyright (C) 2010 - 2012 Samsung Electronics Co., Ltd.
  *
  * S5P series MIPI CSI slave device support
  *
@@ -15,21 +15,14 @@ struct platform_device;
 
 /**
  * struct s5p_platform_mipi_csis - platform data for S5P MIPI-CSIS driver
- * @clk_rate: bus clock frequency
- * @lanes: number of data lanes used
- * @alignment: data alignment in bits
+ * @clk_rate:  bus clock frequency
+ * @lanes:     number of data lanes used
  * @hs_settle: HS-RX settle time
- * @fixed_phy_vdd: false to enable external D-PHY regulator management in the
- *		   driver or true in case this regulator has no enable function
- * @phy_enable: pointer to a callback controlling D-PHY enable/reset
  */
 struct s5p_platform_mipi_csis {
 	unsigned long clk_rate;
 	u8 lanes;
-	u8 alignment;
 	u8 hs_settle;
-	bool fixed_phy_vdd;
-	int (*phy_enable)(struct platform_device *pdev, bool on);
 };
 
 /**
