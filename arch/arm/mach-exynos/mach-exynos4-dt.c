@@ -68,6 +68,18 @@ static const struct of_dev_auxdata exynos4210_auxdata_lookup[] __initconst = {
 	OF_DEV_AUXDATA("samsung,s5pv210-tvmixer", S5P_PA_MIXER, "s5p-mixer", NULL),
 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA0, "dma-pl330.0", NULL),
 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA1, "dma-pl330.1", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-csis", EXYNOS4_PA_MIPI_CSIS0,
+				"s5p-mipi-csis.0", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-csis", EXYNOS4_PA_MIPI_CSIS1,
+				"s5p-mipi-csis.1", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-fimc", EXYNOS4_PA_FIMC0,
+				"exynos4-fimc.0", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-fimc", EXYNOS4_PA_FIMC1,
+				"exynos4-fimc.1", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-fimc", EXYNOS4_PA_FIMC2,
+				"exynos4-fimc.2", NULL),
+	OF_DEV_AUXDATA("samsung,exynos4210-fimc", EXYNOS4_PA_FIMC3,
+				"exynos4-fimc.3", NULL),
 	{},
 };
 

@@ -179,4 +179,32 @@
 	i2c@138D0000 {
 		status = "disabled";
 	};
+
+	camera {
+		status = "disabled";
+	};
+
+	fimc@11800000 {
+		status = "disabled";
+	};
+
+	fimc@11810000 {
+		status = "disabled";
+	};
+
+	fimc@11820000 {
+		status = "disabled";
+	};
+
+	fimc@11830000 {
+		status = "disabled";
+	};
+
+	csis@11880000 {
+		status = "disabled";
+	};
+
+	csis@11890000 {
+		status = "disabled";
+	};
 };

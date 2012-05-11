@@ -183,6 +183,60 @@
 		};
 	};
 
+	fimc0: fimc@11800000 {
+		compatible = "samsung,exynos4210-fimc";
+		reg = <0x11800000 0x1000>;
+		interrupts = <0 84 0>;
+		cell-index = <0>;
+		pd = <&pd_cam>;
+	};
+
+	fimc1: fimc@11810000 {
+		compatible = "samsung,exynos4210-fimc";
+		reg = <0x11810000 0x1000>;
+		interrupts = <0 85 0>;
+		cell-index = <1>;
+		pd = <&pd_cam>;
+	};
+
+	fimc2: fimc@11820000 {
+		compatible = "samsung,exynos4210-fimc";
+		reg = <0x11820000 0x1000>;
+		interrupts = <0 86 0>;
+		cell-index = <2>;
+		pd = <&pd_cam>;
+	};
+
+	fimc3: fimc@11830000 {
+		compatible = "samsung,exynos4210-fimc";
+		reg = <0x11830000 0x1000>;
+		interrupts = <0 87 0>;
+		cell-index = <3>;
+		pd = <&pd_cam>;
+	};
+
+	csis0: csis@11880000 {
+		compatible = "samsung,exynos4210-csis";
+		reg = <0x11880000 0x1000>;
+		interrupts = <0 78 0>;
+		cell-index = <0>;
+		pd = <&pd_cam>;
+	};
+
+	csis1: csis@11890000 {
+		compatible = "samsung,exynos4210-csis";
+		reg = <0x11890000 0x1000>;
+		interrupts = <0 79 0>;
+		cell-index = <1>;
+		pd = <&pd_cam>;
+	};
+
+	camera {
+		compatible = "samsung,fimc";
+		#address-cells = <1>;
+		#size-cells = <1>;
+	};
+
 	gpio-controllers {
 		#address-cells = <1>;
 		#size-cells = <1>;
