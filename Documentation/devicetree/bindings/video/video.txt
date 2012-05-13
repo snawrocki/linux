@@ -1,0 +1,10 @@
+Common properties of video data source devices (image sensor, video encoders, etc.)
+
+Video bus types
+---------------
+
+- video-bus-type : must be one of:
+
+    - itu-601   : parallel bus with HSYNC and VSYNC - ITU-R BT.601;
+    - itu-656   : parallel bus with embedded synchronization - ITU-R BT.656;
+    - mipi-csi2 : MIPI-CSI2 serial bus;
