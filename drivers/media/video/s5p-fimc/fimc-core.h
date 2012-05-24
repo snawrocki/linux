@@ -414,7 +414,6 @@ struct fimc_ctx;
  * @slock:	the spinlock protecting this data structure
  * @lock:	the mutex protecting this data structure
  * @pdev:	pointer to the FIMC platform device
- * @pdata:	pointer to the device platform data
  * @variant:	the IP variant information
  * @id:		FIMC device index (0..FIMC_MAX_DEVS)
  * @clock:	clocks required for FIMC operation
@@ -431,7 +430,6 @@ struct fimc_dev {
 	spinlock_t			slock;
 	struct mutex			lock;
 	struct platform_device		*pdev;
-	struct s5p_platform_fimc	*pdata;
 	struct fimc_variant		*variant;
 	u16				id;
 	struct clk			*clock[MAX_FIMC_CLOCKS];

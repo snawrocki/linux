@@ -21,6 +21,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/list.h>
 #include <linux/io.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <media/v4l2-ioctl.h>
@@ -187,6 +189,198 @@ static struct fimc_fmt fimc_formats[] = {
 		.flags		= FMT_FLAGS_CAM,
 	},
 };
+
+/* Image pixel limits, similar across several FIMC HW revisions. */
+static struct fimc_pix_limit s5p_pix_limit[4] = {
+	[0] = {
+		.scaler_en_w	= 3264,
+		.scaler_dis_w	= 8192,
+		.in_rot_en_h	= 1920,
+		.in_rot_dis_w	= 8192,
+		.out_rot_en_w	= 1920,
+		.out_rot_dis_w	= 4224,
+	},
+	[1] = {
+		.scaler_en_w	= 4224,
+		.scaler_dis_w	= 8192,
+		.in_rot_en_h	= 1920,
+		.in_rot_dis_w	= 8192,
+		.out_rot_en_w	= 1920,
+		.out_rot_dis_w	= 4224,
+	},
+	[2] = {
+		.scaler_en_w	= 1920,
+		.scaler_dis_w	= 8192,
+		.in_rot_en_h	= 1280,
+		.in_rot_dis_w	= 8192,
+		.out_rot_en_w	= 1280,
+		.out_rot_dis_w	= 1920,
+	},
+	[3] = {
+		.scaler_en_w	= 1920,
+		.scaler_dis_w	= 8192,
+		.in_rot_en_h	= 1366,
+		.in_rot_dis_w	= 8192,
+		.out_rot_en_w	= 1366,
+		.out_rot_dis_w	= 1920,
+	},
+};
+
+static struct fimc_variant fimc0_variant_s5p = {
+	.has_inp_rot	 = 1,
+	.has_out_rot	 = 1,
+	.has_cam_if	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 8,
+	.min_vsize_align = 16,
+	.out_buf_count	 = 4,
+	.pix_limit	 = &s5p_pix_limit[0],
+};
+
+static struct fimc_variant fimc2_variant_s5p = {
+	.has_cam_if	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 8,
+	.min_vsize_align = 16,
+	.out_buf_count	 = 4,
+	.pix_limit	 = &s5p_pix_limit[1],
+};
+
+static struct fimc_variant fimc0_variant_s5pv210 = {
+	.pix_hoff	 = 1,
+	.has_inp_rot	 = 1,
+	.has_out_rot	 = 1,
+	.has_cam_if	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 8,
+	.min_vsize_align = 16,
+	.out_buf_count	 = 4,
+	.pix_limit	 = &s5p_pix_limit[1],
+};
+
+static struct fimc_variant fimc1_variant_s5pv210 = {
+	.pix_hoff	 = 1,
+	.has_inp_rot	 = 1,
+	.has_out_rot	 = 1,
+	.has_cam_if	 = 1,
+	.has_mainscaler_ext = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 1,
+	.min_vsize_align = 1,
+	.out_buf_count	 = 4,
+	.pix_limit	 = &s5p_pix_limit[2],
+};
+
+static struct fimc_variant fimc2_variant_s5pv210 = {
+	.has_cam_if	 = 1,
+	.pix_hoff	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 8,
+	.min_vsize_align = 16,
+	.out_buf_count	 = 4,
+	.pix_limit	 = &s5p_pix_limit[2],
+};
+
+static struct fimc_variant fimc0_variant_exynos4 = {
+	.pix_hoff	 = 1,
+	.has_inp_rot	 = 1,
+	.has_out_rot	 = 1,
+	.has_cam_if	 = 1,
+	.has_cistatus2	 = 1,
+	.has_mainscaler_ext = 1,
+	.has_alpha	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 2,
+	.min_vsize_align = 1,
+	.out_buf_count	 = 32,
+	.pix_limit	 = &s5p_pix_limit[1],
+};
+
+static struct fimc_variant fimc3_variant_exynos4 = {
+	.pix_hoff	 = 1,
+	.has_cam_if	 = 1,
+	.has_cistatus2	 = 1,
+	.has_mainscaler_ext = 1,
+	.has_alpha	 = 1,
+	.min_inp_pixsize = 16,
+	.min_out_pixsize = 16,
+	.hor_offs_align	 = 2,
+	.min_vsize_align = 1,
+	.out_buf_count	 = 32,
+	.pix_limit	 = &s5p_pix_limit[3],
+};
+
+/* S5PC100 */
+static struct fimc_drvdata fimc_drvdata_s5p = {
+	.variant = {
+		[0] = &fimc0_variant_s5p,
+		[1] = &fimc0_variant_s5p,
+		[2] = &fimc2_variant_s5p,
+	},
+	.num_entities = 3,
+	.lclk_frequency = 133000000UL,
+};
+
+/* S5PV210, S5PC110 */
+static struct fimc_drvdata fimc_drvdata_s5pv210 = {
+	.variant = {
+		[0] = &fimc0_variant_s5pv210,
+		[1] = &fimc1_variant_s5pv210,
+		[2] = &fimc2_variant_s5pv210,
+	},
+	.num_entities = 3,
+	.lclk_frequency = 166000000UL,
+};
+
+/* EXYNOS4210, S5PV310, S5PC210 */
+static struct fimc_drvdata fimc_drvdata_exynos4 = {
+	.variant = {
+		[0] = &fimc0_variant_exynos4,
+		[1] = &fimc0_variant_exynos4,
+		[2] = &fimc0_variant_exynos4,
+		[3] = &fimc3_variant_exynos4,
+	},
+	.num_entities = 4,
+	.lclk_frequency = 166000000UL,
+};
+
+static struct platform_device_id fimc_driver_ids[] = {
+	{
+		.name		= "s5p-fimc",
+		.driver_data	= (unsigned long)&fimc_drvdata_s5p,
+	}, {
+		.name		= "s5pv210-fimc",
+		.driver_data	= (unsigned long)&fimc_drvdata_s5pv210,
+	}, {
+		.name		= "exynos4-fimc",
+		.driver_data	= (unsigned long)&fimc_drvdata_exynos4,
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(platform, fimc_driver_ids);
+
+#ifdef CONFIG_OF
+static const struct of_device_id fimc_of_match[] __devinitconst = {
+	{
+		.compatible = "samsung,s5pv210-fimc",
+		.data = &fimc_drvdata_s5pv210,
+	}, {
+		.compatible = "samsung,exynos4210-fimc",
+		.data = &fimc_drvdata_exynos4,
+	}, {
+		.compatible = "samsung,exynos4412-fimc",
+		.data = &fimc_drvdata_exynos4,
+	},
+	{ /* sentinel */ },
+};
+MODULE_DEVICE_TABLE(of, fimc_of_match);
+#endif
 
 struct fimc_fmt *fimc_get_format(unsigned int index)
 {
@@ -865,29 +1059,39 @@ static int fimc_m2m_resume(struct fimc_dev *fimc)
 
 static int fimc_probe(struct platform_device *pdev)
 {
-	struct fimc_drvdata *drv_data = fimc_get_drvdata(pdev);
-	struct s5p_platform_fimc *pdata;
+	struct fimc_drvdata *drv_data = NULL;
+
+	const struct of_device_id *of_id;
 	struct fimc_dev *fimc;
 	struct resource *res;
 	int ret = 0;
-
-	if (pdev->id >= drv_data->num_entities) {
-		dev_err(&pdev->dev, "Invalid platform device id: %d\n",
-			pdev->id);
-		return -EINVAL;
-	}
 
 	fimc = devm_kzalloc(&pdev->dev, sizeof(*fimc), GFP_KERNEL);
 	if (!fimc)
 		return -ENOMEM;
 
-	fimc->id = pdev->id;
+	if (pdev->dev.of_node) {
+		u32 id = 0;
+		of_id = of_match_node(fimc_of_match, pdev->dev.of_node);
+		if (of_id)
+			drv_data = of_id->data;
+
+		of_property_read_u32(pdev->dev.of_node, "cell-index", &id);
+		fimc->id = id;
+
+	} else {
+		drv_data = fimc_get_drvdata(pdev);
+		fimc->id = pdev->id;
+	}
+
+	if (drv_data == NULL || fimc->id >= drv_data->num_entities) {
+		dev_err(&pdev->dev, "Invalid driver data or device index (%d)\n",
+			fimc->id);
+		return -EINVAL;
+	}
 
 	fimc->variant = drv_data->variant[fimc->id];
 	fimc->pdev = pdev;
-	pdata = pdev->dev.platform_data;
-	fimc->pdata = pdata;
-
 	init_waitqueue_head(&fimc->irq_queue);
 	spin_lock_init(&fimc->slock);
 	mutex_init(&fimc->lock);
@@ -1036,181 +1240,6 @@ static int __devexit fimc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-/* Image pixel limits, similar across several FIMC HW revisions. */
-static struct fimc_pix_limit s5p_pix_limit[4] = {
-	[0] = {
-		.scaler_en_w	= 3264,
-		.scaler_dis_w	= 8192,
-		.in_rot_en_h	= 1920,
-		.in_rot_dis_w	= 8192,
-		.out_rot_en_w	= 1920,
-		.out_rot_dis_w	= 4224,
-	},
-	[1] = {
-		.scaler_en_w	= 4224,
-		.scaler_dis_w	= 8192,
-		.in_rot_en_h	= 1920,
-		.in_rot_dis_w	= 8192,
-		.out_rot_en_w	= 1920,
-		.out_rot_dis_w	= 4224,
-	},
-	[2] = {
-		.scaler_en_w	= 1920,
-		.scaler_dis_w	= 8192,
-		.in_rot_en_h	= 1280,
-		.in_rot_dis_w	= 8192,
-		.out_rot_en_w	= 1280,
-		.out_rot_dis_w	= 1920,
-	},
-	[3] = {
-		.scaler_en_w	= 1920,
-		.scaler_dis_w	= 8192,
-		.in_rot_en_h	= 1366,
-		.in_rot_dis_w	= 8192,
-		.out_rot_en_w	= 1366,
-		.out_rot_dis_w	= 1920,
-	},
-};
-
-static struct fimc_variant fimc0_variant_s5p = {
-	.has_inp_rot	 = 1,
-	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
-	.out_buf_count	 = 4,
-	.pix_limit	 = &s5p_pix_limit[0],
-};
-
-static struct fimc_variant fimc2_variant_s5p = {
-	.has_cam_if	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
-	.out_buf_count	 = 4,
-	.pix_limit	 = &s5p_pix_limit[1],
-};
-
-static struct fimc_variant fimc0_variant_s5pv210 = {
-	.pix_hoff	 = 1,
-	.has_inp_rot	 = 1,
-	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
-	.out_buf_count	 = 4,
-	.pix_limit	 = &s5p_pix_limit[1],
-};
-
-static struct fimc_variant fimc1_variant_s5pv210 = {
-	.pix_hoff	 = 1,
-	.has_inp_rot	 = 1,
-	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
-	.has_mainscaler_ext = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 1,
-	.min_vsize_align = 1,
-	.out_buf_count	 = 4,
-	.pix_limit	 = &s5p_pix_limit[2],
-};
-
-static struct fimc_variant fimc2_variant_s5pv210 = {
-	.has_cam_if	 = 1,
-	.pix_hoff	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
-	.out_buf_count	 = 4,
-	.pix_limit	 = &s5p_pix_limit[2],
-};
-
-static struct fimc_variant fimc0_variant_exynos4 = {
-	.pix_hoff	 = 1,
-	.has_inp_rot	 = 1,
-	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
-	.has_cistatus2	 = 1,
-	.has_mainscaler_ext = 1,
-	.has_alpha	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 2,
-	.min_vsize_align = 1,
-	.out_buf_count	 = 32,
-	.pix_limit	 = &s5p_pix_limit[1],
-};
-
-static struct fimc_variant fimc3_variant_exynos4 = {
-	.pix_hoff	 = 1,
-	.has_cam_if	 = 1,
-	.has_cistatus2	 = 1,
-	.has_mainscaler_ext = 1,
-	.has_alpha	 = 1,
-	.min_inp_pixsize = 16,
-	.min_out_pixsize = 16,
-	.hor_offs_align	 = 2,
-	.min_vsize_align = 1,
-	.out_buf_count	 = 32,
-	.pix_limit	 = &s5p_pix_limit[3],
-};
-
-/* S5PC100 */
-static struct fimc_drvdata fimc_drvdata_s5p = {
-	.variant = {
-		[0] = &fimc0_variant_s5p,
-		[1] = &fimc0_variant_s5p,
-		[2] = &fimc2_variant_s5p,
-	},
-	.num_entities = 3,
-	.lclk_frequency = 133000000UL,
-};
-
-/* S5PV210, S5PC110 */
-static struct fimc_drvdata fimc_drvdata_s5pv210 = {
-	.variant = {
-		[0] = &fimc0_variant_s5pv210,
-		[1] = &fimc1_variant_s5pv210,
-		[2] = &fimc2_variant_s5pv210,
-	},
-	.num_entities = 3,
-	.lclk_frequency = 166000000UL,
-};
-
-/* EXYNOS4210, S5PV310, S5PC210 */
-static struct fimc_drvdata fimc_drvdata_exynos4 = {
-	.variant = {
-		[0] = &fimc0_variant_exynos4,
-		[1] = &fimc0_variant_exynos4,
-		[2] = &fimc0_variant_exynos4,
-		[3] = &fimc3_variant_exynos4,
-	},
-	.num_entities = 4,
-	.lclk_frequency = 166000000UL,
-};
-
-static struct platform_device_id fimc_driver_ids[] = {
-	{
-		.name		= "s5p-fimc",
-		.driver_data	= (unsigned long)&fimc_drvdata_s5p,
-	}, {
-		.name		= "s5pv210-fimc",
-		.driver_data	= (unsigned long)&fimc_drvdata_s5pv210,
-	}, {
-		.name		= "exynos4-fimc",
-		.driver_data	= (unsigned long)&fimc_drvdata_exynos4,
-	},
-	{},
-};
-MODULE_DEVICE_TABLE(platform, fimc_driver_ids);
-
 static const struct dev_pm_ops fimc_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(fimc_suspend, fimc_resume)
 	SET_RUNTIME_PM_OPS(fimc_runtime_suspend, fimc_runtime_resume, NULL)
@@ -1221,9 +1250,10 @@ static struct platform_driver fimc_driver = {
 	.remove		= __devexit_p(fimc_remove),
 	.id_table	= fimc_driver_ids,
 	.driver = {
-		.name	= FIMC_MODULE_NAME,
-		.owner	= THIS_MODULE,
-		.pm     = &fimc_pm_ops,
+		.of_match_table = of_match_ptr(fimc_of_match),
+		.name		= FIMC_MODULE_NAME,
+		.owner		= THIS_MODULE,
+		.pm     	= &fimc_pm_ops,
 	}
 };
 

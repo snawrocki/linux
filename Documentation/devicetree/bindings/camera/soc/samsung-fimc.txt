@@ -1,0 +1,66 @@
+Samsung S5P/EXYNOS SoC Camera Subsystem (FIMC)
+----------------------------------------------
+
+The Exynos Camera subsystem uses a dedicated device node associated with
+top level device driver that manages common properties of the whole subsystem,
+like common camera port pins or clocks for external image sensors. This
+aggregate node references related platform sub-devices - FIMC, FIMC-LITE,
+MIPI-CSIS [1], and it also contains nodes describing image sensors wired to
+the host SoC's video port and using I2C or SPI as the control bus.
+
+
+Common 'camera' node
+--------------------
+
+Required properties:
+
+- compatible	   : must be "samsung,fimc"
+- fimc-controllers : an array of phandles to 'fimc' device nodes,
+		     size of this array must be at least 1;
+
+Optional properties:
+
+- csi-rx-controllers : an array of phandles to 'csis' device nodes,
+		       it is required for sensors with MIPI-CSI2 bus;
+
+'fimc' device node
+------------------
+
+Required properties:
+
+- compatible : should be one of:
+		"samsung,s5pv210-fimc"
+		"samsung,exynos4210-fimc";
+		"samsung,exynos4412-fimc";
+- reg	     : physical base address and size of the device memory mapped
+	       registers;
+- interrupts : FIMC interrupt to the CPU should be described here;
+- cell-index : FIMC IP instance index, the number of available instances
+	       depends on the SoC revision. For S5PV210 valid values are:
+	       0...2, for Exynos4x1x: 0...3.
+
+Example:
+
+	fimc0: fimc@11800000 {
+		compatible = "samsung,exynos4210-fimc";
+		reg = <0x11800000 0x1000>;
+		interrupts = <0 85 0>;
+		cell-index = <0>;
+	};
+
+	csis0: csis@11880000 {
+		compatible = "samsung,exynos4210-csis";
+		reg = <0x11880000 0x1000>;
+		interrupts = <0 78 0>;
+		cell-index = <0>;
+	};
+
+	camera {
+		compatible = "samsung,fimc";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		fimc-controllers = <&fimc0>;
+		csi-rx-controllers = <&csis0>;
+	};
+
+[1] Documentation/devicetree/bindings/video/samsung-mipi-csis.txt

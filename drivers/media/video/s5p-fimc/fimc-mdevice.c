@@ -335,15 +335,15 @@ static int fimc_register_callback(struct device *dev, void *p)
 	struct fimc_dev *fimc = dev_get_drvdata(dev);
 	struct v4l2_subdev *sd = &fimc->vid_cap.subdev;
 	struct fimc_md *fmd = p;
-	int ret = 0;
+	int ret;
 
-	if (!fimc || !fimc->pdev)
+	if (fimc == NULL)
 		return 0;
 
-	if (fimc->pdev->id < 0 || fimc->pdev->id >= FIMC_MAX_DEVS)
+	if (fimc->id >= FIMC_MAX_DEVS)
 		return 0;
 
-	fmd->fimc[fimc->pdev->id] = fimc;
+	fmd->fimc[fimc->id] = fimc;
 	sd->grp_id = FIMC_GROUP_ID;
 
 	ret = v4l2_device_register_subdev(&fmd->v4l2_dev, sd);
