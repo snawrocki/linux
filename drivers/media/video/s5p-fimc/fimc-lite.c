@@ -17,6 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
@@ -35,6 +36,37 @@
 
 static int debug;
 module_param(debug, int, 0644);
+
+
+static struct flite_variant fimc_lite0_variant_exynos4 = {
+	.max_width		= 8192,
+	.max_height		= 8192,
+	.out_width_align	= 8,
+	.win_hor_offs_align	= 2,
+	.out_hor_offs_align	= 8,
+};
+
+/* EXYNOS4212, EXYNOS4412 */
+static struct flite_drvdata fimc_lite_drvdata_exynos4 = {
+	.variant = {
+		[0] = &fimc_lite0_variant_exynos4,
+		[1] = &fimc_lite0_variant_exynos4,
+	},
+};
+
+#ifdef CONFIG_OF
+static const struct of_device_id flite_of_match[] __devinitconst = {
+	{
+		.compatible = "samsung,exynos4412-fimc-lite",
+		.data = &fimc_lite_drvdata_exynos4,
+	}, {
+		.compatible = "samsung,exynos4212-fimc-lite",
+		.data = &fimc_lite_drvdata_exynos4,
+	},
+	{ /* sentinel */ },
+};
+MODULE_DEVICE_TABLE(of, fimc_of_match);
+#endif
 
 static const struct fimc_fmt fimc_lite_formats[] = {
 	{
@@ -1378,6 +1410,7 @@ static int fimc_lite_clk_get(struct fimc_lite *fimc)
 static int __devinit fimc_lite_probe(struct platform_device *pdev)
 {
 	struct flite_drvdata *drv_data = fimc_lite_get_drvdata(pdev);
+	const struct of_device_id *of_id;
 	struct fimc_lite *fimc;
 	struct resource *res;
 	int ret;
@@ -1386,7 +1419,20 @@ static int __devinit fimc_lite_probe(struct platform_device *pdev)
 	if (!fimc)
 		return -ENOMEM;
 
-	fimc->index = pdev->id;
+	if (pdev->dev.of_node) {
+		of_id = of_match_node(of_match_ptr(flite_of_match),
+				      pdev->dev.of_node);
+		if (of_id)
+			drv_data = of_id->data;
+		of_property_read_u32(pdev->dev.of_node, "cell-index",
+				     &fimc->index);
+	} else {
+		fimc->index = pdev->id;
+	}
+
+	if (drv_data == NULL || fimc->index >= FIMC_LITE_MAX_DEVS)
+		return -EINVAL;
+
 	fimc->variant = drv_data->variant[fimc->index];
 	fimc->pdev = pdev;
 
@@ -1530,20 +1576,10 @@ static int __devexit fimc_lite_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct flite_variant fimc_lite0_variant_exynos4 = {
-	.max_width		= 8192,
-	.max_height		= 8192,
-	.out_width_align	= 8,
-	.win_hor_offs_align	= 2,
-	.out_hor_offs_align	= 8,
-};
-
-/* EXYNOS4212, EXYNOS4412 */
-static struct flite_drvdata fimc_lite_drvdata_exynos4 = {
-	.variant = {
-		[0] = &fimc_lite0_variant_exynos4,
-		[1] = &fimc_lite0_variant_exynos4,
-	},
+static const struct dev_pm_ops fimc_lite_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(fimc_lite_suspend, fimc_lite_resume)
+	SET_RUNTIME_PM_OPS(fimc_lite_runtime_suspend, fimc_lite_runtime_resume,
+			   NULL)
 };
 
 static struct platform_device_id fimc_lite_driver_ids[] = {
@@ -1555,17 +1591,12 @@ static struct platform_device_id fimc_lite_driver_ids[] = {
 };
 MODULE_DEVICE_TABLE(platform, fimc_lite_driver_ids);
 
-static const struct dev_pm_ops fimc_lite_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(fimc_lite_suspend, fimc_lite_resume)
-	SET_RUNTIME_PM_OPS(fimc_lite_runtime_suspend, fimc_lite_runtime_resume,
-			   NULL)
-};
-
 static struct platform_driver fimc_lite_driver = {
 	.probe		= fimc_lite_probe,
 	.remove		= __devexit_p(fimc_lite_remove),
 	.id_table	= fimc_lite_driver_ids,
 	.driver = {
+		.of_match_table = of_match_ptr(flite_of_match),
 		.name		= FIMC_LITE_DRV_NAME,
 		.owner		= THIS_MODULE,
 		.pm		= &fimc_lite_pm_ops,

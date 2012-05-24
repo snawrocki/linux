@@ -39,6 +39,21 @@ Required properties:
 	       depends on the SoC revision. For S5PV210 valid values are:
 	       0...2, for Exynos4x1x: 0...3.
 
+
+'fimc-lite' device node
+-----------------------
+
+Required properties:
+
+- compatible : should be one of:
+		"samsung,exynos4212-fimc";
+		"samsung,exynos4412-fimc";
+- reg	     : physical base address and size of the device's memory mapped
+	       registers;
+- interrupts : should contain FIMC-LITE interrupt;
+- cell-index : FIMC-LITE IP instance index;
+
+
 Example:
 
 	fimc0: fimc@11800000 {
