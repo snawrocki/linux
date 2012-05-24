@@ -1,0 +1,57 @@
+Samsung S5K6AAFX camera sensor
+------------------------------
+
+Required properties:
+
+- compatible : "samsung,s5k6aafx";
+- reg : base address of the device on I2C bus;
+- video-itu-601-bus : parallel bus with HSYNC and VSYNC - ITU-R BT.601;
+- vdd_core-supply : digital core voltage supply 1.5V (1.4V to 1.6V);
+- vdda-supply : analog power voltage supply 2.8V (2.6V to 3.0V);
+- vdd_reg-supply : regulator input power voltage supply 1.8V (1.7V to 1.9V)
+		   or 2.8V (2.6V to 3.0);
+- vddio-supply : I/O voltage supply 1.8V (1.65V to 1.95V)
+		 or 2.8V (2.5V to 3.1V);
+
+Optional properties:
+
+- clock-frequency : the IP's main (system bus) clock frequency in Hz, the default
+		    value when this property is not specified is 24 MHz;
+- data-lanes : number of physical lanes used (default 2 if not specified);
+- gpio-stby : specifies the S5K6AA_STBY GPIO
+- gpio-rst : specifies the S5K6AA_RST GPIO
+- samsung,s5k6aa-inv-stby : set inverted S5K6AA_STBY GPIO level;
+- samsung,s5k6aa-inv-rst : set inverted S5K6AA_RST GPIO level;
+- samsung,s5k6aa-hflip : set the default horizontal image flipping;
+- samsung,s5k6aa-vflip : set the default vertical image flipping;
+
+
+Example:
+
+	gpl2: gpio-controller@0 {
+	};
+
+	reg0: regulator@0 {
+	};
+
+	reg1: regulator@1 {
+	};
+
+	reg2: regulator@2 {
+	};
+
+	reg3: regulator@3 {
+	};
+
+	s5k6aafx@3c {
+		compatible = "samsung,s5k6aafx";
+		reg = <0x3c>;
+		clock-frequency = <24000000>;
+		gpio-rst = <&gpl2 0 2 0 3>;
+		gpio-stby = <&gpl2 1 2 0 3>;
+		video-itu-601-bus;
+		vdd_core-supply = <&reg0>;
+		vdda-supply = <&reg1>;
+		vdd_reg-supply = <&reg2>;
+		vddio-supply = <&reg3>;
+	};
