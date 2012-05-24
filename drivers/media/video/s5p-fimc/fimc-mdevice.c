@@ -17,6 +17,8 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/types.h>
@@ -404,6 +406,87 @@ static int csis_register_callback(struct device *dev, void *p)
 	return ret;
 }
 
+static int fimc_md_register_of_plat_entities(struct fimc_md *fmd)
+{
+#ifdef CONFIG_OF
+	struct device_node *np = fmd->pdev->dev.of_node;
+	struct device_node *node;
+	struct platform_device *pdev;
+	struct v4l2_subdev *sd;
+	struct fimc_dev *fimc;
+	u32 index;
+	int ret;
+
+	for (index = 0; index < FIMC_MAX_DEVS; index++) {
+		node = of_parse_phandle(np, "fimc-controllers", index);
+		if (node == NULL)
+			break;
+
+		pdev = of_find_device_by_node(node);
+		of_node_put(node);
+
+		fimc = dev_get_drvdata(&pdev->dev);
+		if (fimc == NULL)
+			return -EPROBE_DEFER;
+
+		if (WARN_ON(fimc->id >= FIMC_MAX_DEVS || fmd->fimc[fimc->id]))
+			continue;
+
+		fmd->fimc[fimc->id] = fimc;
+		sd = &fimc->vid_cap.subdev;
+		sd->grp_id = FIMC_GROUP_ID;
+
+		ret = v4l2_device_register_subdev(&fmd->v4l2_dev, sd);
+		if (ret) {
+			v4l2_err(&fmd->v4l2_dev, "Failed to register FIMC.%d\n",
+				 fimc->id);
+			return ret;
+		}
+
+		pr_notice("%s:%d succedded to register %s\n", __FILE__, __LINE__, node->full_name);
+	}
+
+	for (index = 0; index < CSIS_MAX_ENTITIES; index++) {
+		unsigned int id = 0;
+
+		node = of_parse_phandle(np, "csi-rx-controllers", index);
+		if (node == NULL)
+			break;
+
+		pdev = of_find_device_by_node(node);
+		if (pdev == NULL)
+			return -ENODEV;
+
+		of_property_read_u32(node, "cell-index", &id);
+		of_node_put(node);
+
+		if (!try_module_get(pdev->dev.driver->owner))
+			return -ENODEV;
+
+		sd = dev_get_drvdata(&pdev->dev);
+		if (sd == NULL) {
+			module_put(pdev->dev.driver->owner);
+			return -EPROBE_DEFER;
+		}
+
+		if (id < CSIS_MAX_ENTITIES && fmd->csis[id].sd == NULL) {
+			sd->grp_id = CSIS_GROUP_ID;
+			fmd->csis[id].sd = sd;
+
+			ret = v4l2_device_register_subdev(&fmd->v4l2_dev, sd);
+			if (ret)
+				v4l2_err(&fmd->v4l2_dev,
+					 "Failed to register CSIS.%d\n", index);
+		}
+		module_put(pdev->dev.driver->owner);
+
+		if (ret)
+			return ret;
+	}
+#endif
+	return 0;
+}
+
 /**
  * fimc_md_register_platform_entities - register FIMC and CSIS media entities
  */
@@ -412,6 +495,9 @@ static int fimc_md_register_platform_entities(struct fimc_md *fmd)
 	struct s5p_platform_fimc *pdata = fmd->pdev->dev.platform_data;
 	struct device_driver *driver;
 	int ret, i;
+
+	if (fmd->pdev->dev.of_node)
+		return fimc_md_register_of_plat_entities(fmd);
 
 	driver = driver_find(FIMC_MODULE_NAME, &platform_bus_type);
 	if (!driver) {
@@ -490,6 +576,7 @@ static void fimc_md_unregister_entities(struct fimc_md *fmd)
 		fimc_md_unregister_sensor(fmd->sensor[i].subdev);
 		fmd->sensor[i].subdev = NULL;
 	}
+	v4l2_info(&fmd->v4l2_dev, "Unregistered all entities\n");
 }
 
 /**
@@ -931,8 +1018,8 @@ static int fimc_md_probe(struct platform_device *pdev)
 	v4l2_dev = &fmd->v4l2_dev;
 	v4l2_dev->mdev = &fmd->media_dev;
 	v4l2_dev->notify = fimc_sensor_notify;
-	snprintf(v4l2_dev->name, sizeof(v4l2_dev->name), "%s",
-		 dev_name(&pdev->dev));
+	strlcpy(v4l2_dev->name, "s5p-fimc-md", sizeof(v4l2_dev->name));
+
 
 	ret = v4l2_device_register(&pdev->dev, &fmd->v4l2_dev);
 	if (ret < 0) {
@@ -1001,12 +1088,21 @@ static int __devexit fimc_md_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id fimc_of_match[] __devinitconst = {
+	{ .compatible = "samsung,fimc" },
+	{ /* sentinel */ },
+};
+MODULE_DEVICE_TABLE(of, fimc_of_match);
+#endif
+
 static struct platform_driver fimc_md_driver = {
 	.probe		= fimc_md_probe,
 	.remove		= __devexit_p(fimc_md_remove),
 	.driver = {
-		.name	= "s5p-fimc-md",
-		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(fimc_of_match),
+		.name		= "s5p-fimc-md",
+		.owner		= THIS_MODULE,
 	}
 };
 

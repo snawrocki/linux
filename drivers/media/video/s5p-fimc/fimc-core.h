@@ -431,7 +431,7 @@ struct fimc_dev {
 	struct mutex			lock;
 	struct platform_device		*pdev;
 	struct fimc_variant		*variant;
-	u16				id;
+	u32				id;
 	struct clk			*clock[MAX_FIMC_CLOCKS];
 	void __iomem			*regs;
 	wait_queue_head_t		irq_queue;
