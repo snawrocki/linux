@@ -20,6 +20,7 @@
 
 #include <plat/cpu.h>
 #include <plat/regs-serial.h>
+#include <plat/clock.h>
 
 #include "common.h"
 
@@ -72,6 +73,7 @@ static const struct of_dev_auxdata exynos4210_auxdata_lookup[] __initconst = {
 
 static void __init exynos4210_dt_map_io(void)
 {
+	clk_xusbxti.rate = 24000000;
 	exynos_init_io(NULL, 0);
 	s3c24xx_init_clocks(24000000);
 }
