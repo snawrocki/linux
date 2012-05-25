@@ -19,6 +19,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/pm_domain.h>
 #include <linux/list.h>
 #include <linux/io.h>
 #include <linux/of.h>
@@ -1057,6 +1058,17 @@ static int fimc_m2m_resume(struct fimc_dev *fimc)
 	return 0;
 }
 
+static void bus_add_dev_to_pd(struct device *dev)
+{
+	struct device_node *np;
+
+	np = of_parse_phandle(dev->of_node, "pd", 0);
+	if (np)
+		pm_genpd_of_add_device(np, dev);
+
+	of_node_put(np);
+}
+
 static int fimc_probe(struct platform_device *pdev)
 {
 	struct fimc_drvdata *drv_data = NULL;
@@ -1072,6 +1084,9 @@ static int fimc_probe(struct platform_device *pdev)
 
 	if (pdev->dev.of_node) {
 		u32 id = 0;
+
+		bus_add_dev_to_pd(&pdev->dev);
+
 		of_id = of_match_node(fimc_of_match, pdev->dev.of_node);
 		if (of_id)
 			drv_data = of_id->data;

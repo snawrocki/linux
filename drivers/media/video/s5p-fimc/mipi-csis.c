@@ -22,6 +22,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/pm_domain.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
@@ -529,6 +530,17 @@ static int s5pcsis_get_platform_data(struct platform_device *pdev,
 	return 0;
 }
 
+static void bus_add_dev_to_pd(struct device *dev)
+{
+	struct device_node *np;
+
+	np = of_parse_phandle(dev->of_node, "pd", 0);
+	if (np)
+		pm_genpd_of_add_device(np, dev);
+
+	of_node_put(np);
+}
+
 static int __devinit s5pcsis_probe(struct platform_device *pdev)
 {
 	struct resource *mem_res;
@@ -542,6 +554,9 @@ static int __devinit s5pcsis_probe(struct platform_device *pdev)
 
 	mutex_init(&state->lock);
 	state->pdev = pdev;
+
+	if (pdev->dev.of_node)
+		bus_add_dev_to_pd(&pdev->dev);
 
 	ret = s5pcsis_get_platform_data(pdev, state);
 	if (ret < 0)
