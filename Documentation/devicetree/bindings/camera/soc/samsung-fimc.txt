@@ -54,6 +54,28 @@ Required properties:
 - cell-index : FIMC-LITE IP instance index;
 
 
+The 'sensor' nodes
+------------------
+
+Required properties:
+
+ - i2c-client : a phandle to an image sensor I2C client device;
+
+Optional properties:
+
+- samsung,camif-mux-id : FIMC video multiplexer input index; for camera
+			 port A, B, C the indexes are 0, 1, 0 respectively.
+			 If this property is not specified a default 0
+			 value will be used by driver.
+
+- samsung,fimc-camclk-id : the SoC CAM_MCLK clock output index. These clocks
+			   are master clocks for external image processors.
+			   If this property is not specified a default 0 value
+			   will be used by driver.
+
+ "video-bus-type" and "clock-frequency" properties must be specified at the
+ node referenced by 'i2c-client' phandle.
+
 Example:
 
 	fimc0: fimc@11800000 {

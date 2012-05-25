@@ -19,6 +19,9 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
+#include <linux/of_device.h>
+#include <linux/of_gpio.h>
+#include <linux/of_i2c.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/types.h>
@@ -278,9 +281,108 @@ static void fimc_md_unregister_sensor(struct v4l2_subdev *sd)
 	v4l2_device_unregister_subdev(sd);
 	adapter = client->adapter;
 	i2c_unregister_device(client);
-	if (adapter)
+	if (adapter && client->dev.of_node == NULL)
 		i2c_put_adapter(adapter);
 }
+
+#ifdef CONFIG_OF
+static struct v4l2_subdev *fimc_md_create_sensor_subdev(struct fimc_md *fmd,
+						struct i2c_client *client,
+						struct fimc_sensor_info *sensor)
+{
+	struct v4l2_subdev *sd;
+	int ret;
+
+	if (!client->driver)
+		return ERR_PTR(-EAGAIN);
+
+	if (!try_module_get(client->driver->driver.owner))
+		return ERR_PTR(-EAGAIN);
+
+	/* Enable sensor's master clock */
+	ret = __fimc_md_set_camclk(fmd, sensor, true);
+	if (ret < 0)
+		return ERR_PTR(ret);
+
+	sd = i2c_get_clientdata(client);
+
+	ret = v4l2_device_register_subdev(&fmd->v4l2_dev, sd);
+	module_put(client->driver->driver.owner);
+	__fimc_md_set_camclk(fmd, sensor, false);
+	if (ret)
+		return ERR_PTR(ret);
+
+	v4l2_set_subdev_hostdata(sd, sensor);
+	sd->grp_id = SENSOR_GROUP_ID;
+	v4l2_info(&fmd->v4l2_dev, "Registered sensor subdevice: %s\n",
+		  sd->name);
+
+	return sd;
+}
+
+static int fimc_md_of_sensors_register(struct fimc_md *fmd,
+				       struct device_node *np)
+{
+	struct device_node *i2c_node, *node = NULL;
+	struct s5p_fimc_isp_info *pdata;
+	struct fimc_sensor_info *sensor;
+	int ret, sensor_index = 0;
+	const char *bt;
+	u32 id, freq;
+
+	for_each_child_of_node(np, node) {
+		struct i2c_client *client = NULL;
+		struct v4l2_subdev *sd;
+
+		sensor = &fmd->sensor[sensor_index];
+		pdata = &sensor->pdata;
+
+		i2c_node = of_parse_phandle(node, "i2c-client", 0);
+		if (i2c_node)
+			client = of_find_i2c_device_by_node(i2c_node);
+		if (client == NULL) {
+			of_node_put(i2c_node);
+			return -EPROBE_DEFER;
+		}
+
+		ret = of_property_read_u32(node, "samsung,fimc-camclk-id", &id);
+		pdata->clk_id = ret ? 0 : id;
+
+		ret = of_property_read_u32(i2c_node, "clock-frequency", &freq);
+		pdata->clk_frequency = ret ? 12000000UL : freq;
+
+		ret = of_property_read_u32(node, "samsung,fimc-mux-id", &id);
+		pdata->mux_id = ret ? 0 : id;
+
+		if(!of_property_read_string(node, "video-bus-type", &bt)) {
+			if (!strcmp(bt, "itu-601"))
+				pdata->bus_type = FIMC_ITU_601;
+			else if (!strcmp(bt, "mipi-csi2"))
+				pdata->bus_type = FIMC_MIPI_CSI2;
+			else if (!strcmp(bt, "itu-656"))
+				pdata->bus_type = FIMC_ITU_656;
+		}
+
+		of_node_put(node);
+		put_device(&client->dev);
+		if (WARN_ON(pdata->bus_type == 0))
+			continue;
+
+		sd = fimc_md_create_sensor_subdev(fmd, client, sensor);
+
+		if (IS_ERR(sd)) {
+			sensor->subdev = NULL;
+			return PTR_ERR(sd);
+		}
+
+		sensor->subdev = sd;
+		sensor_index++;
+
+		fmd->num_sensors++;
+	}
+	return 0;
+}
+#endif /* CONFIG_OF */
 
 static int fimc_md_register_sensor_entities(struct fimc_md *fmd)
 {
@@ -300,7 +402,13 @@ static int fimc_md_register_sensor_entities(struct fimc_md *fmd)
 	ret = pm_runtime_get_sync(&fd->pdev->dev);
 	if (ret < 0)
 		return ret;
-
+#ifdef CONFIG_OF
+	if (fmd->pdev->dev.of_node) {
+		ret = fimc_md_of_sensors_register(fmd, fmd->pdev->dev.of_node);
+		pm_runtime_put(&fd->pdev->dev);
+		return ret;
+	}
+#endif
 	WARN_ON(pdata->num_clients > ARRAY_SIZE(fmd->sensor));
 	num_clients = min_t(u32, pdata->num_clients, ARRAY_SIZE(fmd->sensor));
 
@@ -1044,7 +1152,7 @@ static int fimc_md_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_unlock;
 
-	if (pdev->dev.platform_data) {
+	if (pdev->dev.platform_data || pdev->dev.of_node) {
 		ret = fimc_md_register_sensor_entities(fmd);
 		if (ret)
 			goto err_unlock;
