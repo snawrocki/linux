@@ -74,7 +74,7 @@
 		regulator-max-microvolt = <1200000>;
 		regulator-always-on;
 		enable-active-high;
-		gpio = <&gpe2 2 1 0 0>;
+		gpio = <&gpe2 5 1 0 0>;
 	};
 
 	camv1_5_reg: voltage-regulator@4 {
@@ -84,7 +84,7 @@
 		regulator-max-microvolt = <1500000>;
 		regulator-always-on;
 		enable-active-high;
-		gpio = <&gpe2 5 1 0 0>;
+		gpio = <&gpe2 2 1 0 0>;
 	};
 
 	hdmi_reg: voltage-regulator@5 {
