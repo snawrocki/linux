@@ -23,6 +23,18 @@ Optional properties:
 - csi-rx-controllers : an array of phandles to 'csis' device nodes,
 		       it is required for sensors with MIPI-CSI2 bus;
 
+- samsung,camport-a-gpios, samsung,camport-b-gpios : gpio specifier list for
+			   the parallel camera ports A and B respectively;
+
+  For 'video-itu-601-bus' the list length must be 13, for 'video-itu-656-bus'
+  at least 10 and for 'video-mipi-csi2-bus' the array should contain at least
+  one gpio (CLKOUT). The meaning of the gpios is as following: DATA[7:0], PCLK,
+  VSYNC, HREF, CLKOUT, FIELD. It is not required to list gpios exactly in that
+  order. All gpios listed here will be configured into camera port function.
+  In case of ITU-R BT.656 bus the VSYNC, HREF, and FIELD pins remain unused,
+  hence don't need to be specified here.
+
+
 'fimc' device node
 ------------------
 

@@ -30,6 +30,10 @@
 
 #define FIMC_MAX_SENSORS	8
 #define FIMC_MAX_CAMCLKS	2
+/* Maximum number of supported parallel video ports */
+#define FIMC_MAX_PARALLEL_PORTS		2
+/* Maximum number of pins per 8-bit parallel port */
+#define FIMC_MAX_PARALLEL_PORT_PINS	13
 
 struct fimc_csis_info {
 	struct v4l2_subdev *sd;
@@ -58,8 +62,13 @@ struct fimc_sensor_info {
 	bool clk_on;
 };
 
+struct fimc_video_port {
+	int gpios[FIMC_MAX_PARALLEL_PORT_PINS];
+};
+
 /**
  * struct fimc_md - fimc media device information
+ * @parallel_ports: parallel video ports data
  * @csis: MIPI CSIS subdevs data
  * @sensor: array of registered sensor subdevs
  * @num_sensors: actual number of registered sensors
@@ -72,6 +81,7 @@ struct fimc_sensor_info {
  * @slock: spinlock protecting @sensor array
  */
 struct fimc_md {
+	struct fimc_video_port *parallel_ports;
 	struct fimc_csis_info csis[CSIS_MAX_ENTITIES];
 	struct fimc_sensor_info sensor[FIMC_MAX_SENSORS];
 	int num_sensors;

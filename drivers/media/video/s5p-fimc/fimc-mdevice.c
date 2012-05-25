@@ -1105,6 +1105,87 @@ static ssize_t fimc_md_sysfs_store(struct device *dev,
 static DEVICE_ATTR(subdev_conf_mode, S_IWUSR | S_IRUGO,
 		   fimc_md_sysfs_show, fimc_md_sysfs_store);
 
+static int __fimc_md_get_gpios(struct device_node *np,
+			       struct fimc_video_port *port,
+			       const char *prop_name)
+{
+	int i, err = -EINVAL;
+
+	for (i = 0; i < FIMC_MAX_PARALLEL_PORT_PINS; i++) {
+		port->gpios[i] = of_get_named_gpio(np, prop_name, i);
+		if (port->gpios[i] == -ENOENT && i > 0)
+			return 0;
+
+		if (gpio_is_valid(port->gpios[i])) {
+			err = gpio_request(port->gpios[i], "fimc");
+			if (!err)
+				continue;
+		}
+
+		pr_err("Failed to configure gpios: %s\n", prop_name);
+
+		while (--i >= 0) {
+			gpio_free(port->gpios[i]);
+			port->gpios[i] = -EINVAL;
+		}
+		break;
+	}
+
+	return err;
+}
+
+static int fimc_md_camport_setup(struct fimc_md *fmd, struct device_node *np)
+{
+	const char *gpio_props[] = { "samsung,camport-a-gpios",
+				     "samsung,camport-b-gpios" };
+	struct fimc_video_port *pport;
+	unsigned int ret;
+	int i;
+
+	pport = devm_kzalloc(&fmd->pdev->dev, FIMC_MAX_PARALLEL_PORTS *
+			     sizeof(*pport), GFP_KERNEL);
+	if (pport == NULL)
+		return -ENOMEM;
+
+	for (i = 0; i < ARRAY_SIZE(gpio_props); i++) {
+		if (!of_find_property(np, gpio_props[i], NULL))
+			continue;
+		ret = __fimc_md_get_gpios(np, &pport[i], gpio_props[i]);
+		if (ret < 0)
+			return ret;
+	}
+
+	fmd->parallel_ports = pport;
+	return ret;
+}
+
+static void fimc_md_camport_release(struct fimc_md *fmd)
+{
+	struct fimc_video_port *pport = fmd->parallel_ports;
+	int port, i;
+
+	if (pport == NULL)
+		return;
+
+	for (port = 0; port < FIMC_MAX_PARALLEL_PORTS; port++, pport++) {
+		for (i = 0; i < FIMC_MAX_PARALLEL_PORT_PINS; i++) {
+			if (!gpio_is_valid(pport->gpios[i]))
+				continue;
+			gpio_free(pport->gpios[i]);
+		}
+	}
+}
+
+static int fimc_md_parse_dt(struct fimc_md *fmd)
+{
+	struct device_node *np = fmd->pdev->dev.of_node;
+
+	if (np == NULL)
+		return 0;
+
+	return fimc_md_camport_setup(fmd, np);
+}
+
 static int fimc_md_probe(struct platform_device *pdev)
 {
 	struct v4l2_device *v4l2_dev;
@@ -1152,11 +1233,16 @@ static int fimc_md_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_unlock;
 
+	ret = fimc_md_parse_dt(fmd);
+	if (ret < 0)
+		goto err_unlock;
+
 	if (pdev->dev.platform_data || pdev->dev.of_node) {
 		ret = fimc_md_register_sensor_entities(fmd);
 		if (ret)
 			goto err_unlock;
 	}
+
 	ret = fimc_md_create_links(fmd);
 	if (ret)
 		goto err_unlock;
@@ -1193,6 +1279,7 @@ static int __devexit fimc_md_remove(struct platform_device *pdev)
 	fimc_md_unregister_entities(fmd);
 	media_device_unregister(&fmd->media_dev);
 	fimc_md_put_clocks(fmd);
+	fimc_md_camport_release(fmd);
 	return 0;
 }
 
