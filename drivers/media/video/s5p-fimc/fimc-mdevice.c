@@ -1136,10 +1136,10 @@ static int __fimc_md_get_gpios(struct device_node *np,
 
 static int fimc_md_camport_setup(struct fimc_md *fmd, struct device_node *np)
 {
-	const char *gpio_props[] = { "samsung,camport-a-gpios",
-				     "samsung,camport-b-gpios" };
+	static const char *gpio_props[] = { "samsung,camport-a-gpios",
+					    "samsung,camport-b-gpios" };
 	struct fimc_video_port *pport;
-	unsigned int ret;
+	unsigned int ret = 0;
 	int i;
 
 	pport = devm_kzalloc(&fmd->pdev->dev, FIMC_MAX_PARALLEL_PORTS *
