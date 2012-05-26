@@ -1532,7 +1532,7 @@ static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa, struct device *dev)
 	s5k6aa->gpio[RST].gpio  = -EINVAL;
 
 	if (np) {
-		gpio.gpio = of_get_named_gpio(np, "gpio-stby", 0);
+		gpio.gpio = of_get_named_gpio(np, "samsung,s5k6aa-gpio-stby", 0);
 		if (!of_get_property(np, "samsung,s5k6aa-inv-stby", NULL))
 			gpio.level = 1;
 	}
@@ -1545,7 +1545,7 @@ static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa, struct device *dev)
 	s5k6aa->gpio[STBY] = *pgpio;
 
 	if (np) {
-		gpio.gpio = of_get_named_gpio(np, "gpio-rst", 0);
+		gpio.gpio = of_get_named_gpio(np, "samsung,s5k6aa-gpio-rst", 0);
 		if (!of_get_property(np, "samsung,s5k6aa-inv-rst", NULL))
 			gpio.level = 1;
 	}
@@ -1583,8 +1583,8 @@ static int s5k6aa_get_platform_data(struct s5k6aa *s5k6aa,
 	}
 
 	if (of_property_read_u32(np, "clock-frequency",
-				  &s5k6aa->mclk_frequency))
-		s5k6aa->mclk_frequency = 24000000UL;
+				 &s5k6aa->mclk_frequency))
+	    return 0;
 
 	if (of_property_read_u32(np, "data-lanes", &s5k6aa->mipi_lanes))
 		s5k6aa->mipi_lanes = 2;
