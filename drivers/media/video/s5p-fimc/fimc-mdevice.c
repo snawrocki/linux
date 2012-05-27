@@ -1,8 +1,8 @@
 /*
  * S5P/EXYNOS4 SoC series camera host interface media device driver
  *
- * Copyright (C) 2011 Samsung Electronics Co., Ltd.
- * Contact: Sylwester Nawrocki, <s.nawrocki@samsung.com>
+ * Copyright (C) 2011 - 2012 Samsung Electronics Co., Ltd.
+ * Sylwester Nawrocki <s.nawrocki@samsung.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -516,16 +516,16 @@ static int csis_register_callback(struct device *dev, void *p)
 
 static int fimc_md_register_of_plat_entities(struct fimc_md *fmd)
 {
-#ifdef CONFIG_OF
 	struct device_node *np = fmd->pdev->dev.of_node;
 	struct device_node *node;
 	struct platform_device *pdev;
 	struct v4l2_subdev *sd;
-	struct fimc_dev *fimc;
 	u32 index;
 	int ret;
 
 	for (index = 0; index < FIMC_MAX_DEVS; index++) {
+		struct fimc_dev *fimc;
+
 		node = of_parse_phandle(np, "fimc-controllers", index);
 		if (node == NULL)
 			break;
@@ -550,14 +550,12 @@ static int fimc_md_register_of_plat_entities(struct fimc_md *fmd)
 				 fimc->id);
 			return ret;
 		}
-
-		pr_notice("%s:%d succedded to register %s\n", __FILE__, __LINE__, node->full_name);
 	}
 
 	for (index = 0; index < CSIS_MAX_ENTITIES; index++) {
 		unsigned int id = 0;
 
-		node = of_parse_phandle(np, "csi-rx-controllers", index);
+		node = of_parse_phandle(np, "csis-controllers", index);
 		if (node == NULL)
 			break;
 
@@ -591,7 +589,6 @@ static int fimc_md_register_of_plat_entities(struct fimc_md *fmd)
 		if (ret)
 			return ret;
 	}
-#endif
 	return 0;
 }
 
