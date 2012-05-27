@@ -1495,17 +1495,37 @@ static const struct v4l2_subdev_ops s5k6aa_subdev_ops = {
 /*
  * GPIO setup
  */
-static int s5k6aa_configure_gpio(int nr, int val, const char *name)
+
+static int s5k6aa_configure_gpio(struct s5k6aa_gpio *pgpio,
+				 enum s5k6aa_gpio_id idx, const char *name,
+				 struct device_node *np)
 {
-	unsigned long flags = val ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
+	static const char * const props[][2] = {
+		{ "samsung,s5k6aa-gpio-rst", "samsung,s5k6aa-inv-rst" },
+		{ "samsung,s5k6aa-gpio-stby", "samsung,s5k6aa-inv-stby" }
+	};
+	unsigned int flags;
 	int ret;
 
-	if (!gpio_is_valid(nr))
+	flags = pgpio->level ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
+
+	if (np) {
+		pgpio->gpio = of_get_named_gpio(np, props[idx][0], 0);
+
+		if (of_get_property(np, props[idx][1], NULL))
+			pgpio->level = 0;
+		else
+			pgpio->level = 1;
+	}
+
+	if (!gpio_is_valid(pgpio->gpio))
 		return 0;
-	ret = gpio_request_one(nr, flags, name);
-	if (!ret)
-		gpio_export(nr, 0);
-	return ret;
+
+	ret = gpio_request_one(pgpio->gpio, flags, name);
+	if (ret < 0)
+		return ret;
+
+	return gpio_export(pgpio->gpio, false);
 }
 
 static void s5k6aa_free_gpios(struct s5k6aa *s5k6aa)
@@ -1523,41 +1543,22 @@ static void s5k6aa_free_gpios(struct s5k6aa *s5k6aa)
 static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa, struct device *dev)
 {
 	const struct s5k6aa_platform_data *pdata = dev->platform_data;
+	struct s5k6aa_gpio gpio = pdata->gpio_stby;
 	struct device_node *np = dev->of_node;
-	const struct s5k6aa_gpio *pgpio;
-	struct s5k6aa_gpio gpio = { 0 };
 	int ret;
 
 	s5k6aa->gpio[STBY].gpio = -EINVAL;
-	s5k6aa->gpio[RST].gpio  = -EINVAL;
+	s5k6aa->gpio[RST].gpio = -EINVAL;
 
-	if (np) {
-		gpio.gpio = of_get_named_gpio(np, "samsung,s5k6aa-gpio-stby", 0);
-		if (!of_get_property(np, "samsung,s5k6aa-inv-stby", NULL))
-			gpio.level = 1;
+	ret = s5k6aa_configure_gpio(&gpio, STBY, "S5K6AA_STBY", np);
+	if (!ret) {
+		s5k6aa->gpio[STBY] = gpio;
+		gpio = pdata->gpio_reset;
+		ret = s5k6aa_configure_gpio(&gpio, RST, "S5K6AA_RST", np);
 	}
-	pgpio = np ? &gpio : &pdata->gpio_stby;
-	ret = s5k6aa_configure_gpio(pgpio->gpio, pgpio->level, "S5K6AA_STBY");
-	if (ret) {
-		s5k6aa_free_gpios(s5k6aa);
-		return ret;
-	}
-	s5k6aa->gpio[STBY] = *pgpio;
-
-	if (np) {
-		gpio.gpio = of_get_named_gpio(np, "samsung,s5k6aa-gpio-rst", 0);
-		if (!of_get_property(np, "samsung,s5k6aa-inv-rst", NULL))
-			gpio.level = 1;
-	}
-	pgpio = np ? &gpio : &pdata->gpio_reset;
-	ret = s5k6aa_configure_gpio(pgpio->gpio, pgpio->level, "S5K6AA_RST");
 	if (ret)
-		goto err;
+		s5k6aa_free_gpios(s5k6aa);
 
-	s5k6aa->gpio[RST] = *pgpio;
-	return 0;
- err:
-	s5k6aa_free_gpios(s5k6aa);
 	return ret;
 }
 
