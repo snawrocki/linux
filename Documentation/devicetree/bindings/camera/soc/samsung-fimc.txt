@@ -20,8 +20,8 @@ Required properties:
 
 Optional properties:
 
-- csi-rx-controllers : an array of phandles to 'csis' device nodes,
-		       it is required for sensors with MIPI-CSI2 bus;
+- csis-controllers : an array of phandles to 'csis' (CSI Slave) device nodes,
+		     it is required for sensors with MIPI-CSI2 bus;
 
 - samsung,camport-a-gpios, samsung,camport-b-gpios : gpio specifier list for
 			   the parallel camera ports A and B respectively;
@@ -109,7 +109,7 @@ Example:
 		#address-cells = <1>;
 		#size-cells = <1>;
 		fimc-controllers = <&fimc0>;
-		csi-rx-controllers = <&csis0>;
+		csis-controllers = <&csis0>;
 	};
 
 [1] Documentation/devicetree/bindings/video/samsung-mipi-csis.txt
