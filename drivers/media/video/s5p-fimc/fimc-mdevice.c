@@ -319,6 +319,29 @@ static struct v4l2_subdev *fimc_md_create_sensor_subdev(struct fimc_md *fmd,
 	return sd;
 }
 
+/**
+ * fimc_md_of_get_bus_type - parse video-bus-type property
+ * @node: device tree node to parse
+ *
+ * Returns enum cam_bus_type value on success, or 0 if no valid value
+ * for 'video-bus-type' property was found.
+ */
+static unsigned int fimc_md_of_get_bus_type(struct device_node *node)
+{
+	const char *prop;
+
+	if (!of_property_read_string(node, "video-bus-type", &prop)) {
+		if (!strcmp(prop, "itu-601"))
+			return FIMC_ITU_601;
+		if (!strcmp(prop, "mipi-csi2"))
+			return FIMC_MIPI_CSI2;
+		if (!strcmp(prop, "itu-656"))
+			return FIMC_ITU_656;
+	}
+
+	return 0;
+}
+
 static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 				       struct device_node *np)
 {
@@ -326,7 +349,6 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 	struct s5p_fimc_isp_info *pdata;
 	struct fimc_sensor_info *sensor;
 	int ret, sensor_index = 0;
-	const char *bt;
 	u32 id, freq;
 
 	fmd->num_sensors = 0;
@@ -355,14 +377,7 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 		ret = of_property_read_u32(node, "samsung,fimc-mux-id", &id);
 		pdata->mux_id = ret ? 0 : id;
 
-		if(!of_property_read_string(node, "video-bus-type", &bt)) {
-			if (!strcmp(bt, "itu-601"))
-				pdata->bus_type = FIMC_ITU_601;
-			else if (!strcmp(bt, "mipi-csi2"))
-				pdata->bus_type = FIMC_MIPI_CSI2;
-			else if (!strcmp(bt, "itu-656"))
-				pdata->bus_type = FIMC_ITU_656;
-		}
+		pdata->bus_type = fimc_md_of_get_bus_type(node);
 
 		of_node_put(node);
 		put_device(&client->dev);

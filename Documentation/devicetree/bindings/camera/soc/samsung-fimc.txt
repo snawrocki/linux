@@ -74,7 +74,7 @@ The 'sensor' nodes
 
 Required properties:
 
- - i2c-client : a phandle to an image sensor I2C client device;
+ - i2c-client         : phandle to an image sensor I2C client device;
 
 Optional properties:
 
@@ -92,6 +92,13 @@ Optional properties:
  node referenced by 'i2c-client' phandle.
 
 Example:
+
+	i2c6: i2c@138C0000 {
+		...
+		s5k6aafx: s5k6aafx@3c {
+			  ...
+		};
+	};
 
 	fimc0: fimc@11800000 {
 		compatible = "samsung,exynos4210-fimc";
@@ -113,6 +120,13 @@ Example:
 		#size-cells = <1>;
 		fimc-controllers = <&fimc0>;
 		csis-controllers = <&csis0>;
+
+		sensor@0 {
+			 i2c-client = <&s5k6aafx>;
+			 samsung,camif-mux-id = <0>;
+			 samsung,fimc-clk-id = <0>;
+			 video-bus-type = "itu-601";
+		};
 	};
 
 [1] Documentation/devicetree/bindings/video/samsung-mipi-csis.txt
