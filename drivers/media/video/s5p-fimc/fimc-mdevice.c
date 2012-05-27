@@ -285,7 +285,6 @@ static void fimc_md_unregister_sensor(struct v4l2_subdev *sd)
 		i2c_put_adapter(adapter);
 }
 
-#ifdef CONFIG_OF
 static struct v4l2_subdev *fimc_md_create_sensor_subdev(struct fimc_md *fmd,
 						struct i2c_client *client,
 						struct fimc_sensor_info *sensor)
@@ -329,6 +328,8 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 	int ret, sensor_index = 0;
 	const char *bt;
 	u32 id, freq;
+
+	fmd->num_sensors = 0;
 
 	for_each_child_of_node(np, node) {
 		struct i2c_client *client = NULL;
@@ -382,7 +383,6 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 	}
 	return 0;
 }
-#endif /* CONFIG_OF */
 
 static int fimc_md_register_sensor_entities(struct fimc_md *fmd)
 {
@@ -402,13 +402,13 @@ static int fimc_md_register_sensor_entities(struct fimc_md *fmd)
 	ret = pm_runtime_get_sync(&fd->pdev->dev);
 	if (ret < 0)
 		return ret;
-#ifdef CONFIG_OF
+
 	if (fmd->pdev->dev.of_node) {
 		ret = fimc_md_of_sensors_register(fmd, fmd->pdev->dev.of_node);
 		pm_runtime_put(&fd->pdev->dev);
 		return ret;
 	}
-#endif
+
 	WARN_ON(pdata->num_clients > ARRAY_SIZE(fmd->sensor));
 	num_clients = min_t(u32, pdata->num_clients, ARRAY_SIZE(fmd->sensor));
 
