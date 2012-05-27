@@ -598,7 +598,7 @@
 		ranges;
 
 		fimc-controllers = <&fimc0 &fimc1>;
-		csi-rx-controllers = <&csis0>;
+		csis-controllers = <&csis0>;
 		samsung,camport-a-gpios = <&gpj0 0 2 0 0>,
 					  <&gpj0 1 2 0 0>,
 					  <&gpj0 2 2 0 0>,
