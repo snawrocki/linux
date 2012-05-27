@@ -23,6 +23,9 @@ Optional properties:
 - csis-controllers : an array of phandles to 'csis' (CSI Slave) device nodes,
 		     it is required for sensors with MIPI-CSI2 bus;
 
+- fimc-lite-controllers : an array of phandles to 'fimc-lite' device nodes,
+		     this property is valid only for Exynos4212, Exynos4412 SoCs;
+
 - samsung,camport-a-gpios, samsung,camport-b-gpios : gpio specifier list for
 			   the parallel camera ports A and B respectively;
 
@@ -60,10 +63,10 @@ Required properties:
 - compatible : should be one of:
 		"samsung,exynos4212-fimc";
 		"samsung,exynos4412-fimc";
-- reg	     : physical base address and size of the device's memory mapped
+- reg	     : physical base address and size of the device memory mapped
 	       registers;
 - interrupts : should contain FIMC-LITE interrupt;
-- cell-index : FIMC-LITE IP instance index;
+- cell-index : FIMC-LITE IP instance index.
 
 
 The 'sensor' nodes

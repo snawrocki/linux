@@ -589,6 +589,38 @@ static int fimc_md_register_of_plat_entities(struct fimc_md *fmd)
 		if (ret)
 			return ret;
 	}
+
+	for (index = 0; index < FIMC_LITE_MAX_DEVS; index++) {
+		struct fimc_lite *fimc_lite;
+
+		node = of_parse_phandle(np, "fimc-lite-controllers", index);
+		if (node == NULL)
+			break;
+
+		pdev = of_find_device_by_node(node);
+		of_node_put(node);
+
+		fimc_lite = dev_get_drvdata(&pdev->dev);
+		if (fimc_lite == NULL)
+			return -EPROBE_DEFER;
+
+		if (WARN_ON(fimc_lite->index >= FIMC_LITE_MAX_DEVS ||
+			    fmd->fimc_lite[fimc_lite->index]))
+			continue;
+
+		fmd->fimc_lite[fimc_lite->index] = fimc_lite;
+		sd = &fimc_lite->subdev;
+		sd->grp_id = FLITE_GROUP_ID;
+
+		ret = v4l2_device_register_subdev(&fmd->v4l2_dev, sd);
+		if (ret) {
+			v4l2_err(&fmd->v4l2_dev,
+				 "Failed to register FIMC-LITE.%d\n",
+				 fimc_lite->index);
+			return ret;
+		}
+	}
+
 	return 0;
 }
 
