@@ -8,3 +8,18 @@ Video bus type
     - itu-601   : parallel bus with HSYNC and VSYNC - ITU-R BT.601;
     - itu-656   : parallel bus with embedded synchronization - ITU-R BT.656;
     - mipi-csi2 : MIPI-CSI2 serial bus;
+
+Video bus signal polarity flags
+-------------------------------
+
+- video-bus-polarity : video bus signal polarity flags, bits [4:0] encoded
+		       as follows:
+    0x01 = active state of the horizontal synchronization signal (HSYNC);
+    0x02 = active state of the vertical synchronization signal (VSYNC);
+    0x04 = the pixel clock sampling edge; 1 - rising edge, 0 - falling edge;
+    0x08 = active state of the data signal;
+    0x10 = the FIELD signal's inversion; if this flag is cleared the meaning
+	   of FIELD signal is:
+	   0:  FIELD - 0/1 = Field1 (odd)/Field2 (even);
+	   if this flag is cleared the meaning of FIELD signal is:
+	   16: FIELD - 1/0 = Field1 (odd)/Field2 (even);

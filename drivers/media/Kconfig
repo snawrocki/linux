@@ -25,7 +25,14 @@ config MEDIA_CONTROLLER
 	  topology and configure it dynamically.
 
 	  This API is mostly used by camera interfaces in embedded platforms.
+#
+# OF helpers
+#
 
+config OF_MEDIA_VIDEO
+	bool
+	---help---
+	  Compile in OF helpers for the Media Video APIs
 #
 # V4L core and enabled API's
 #

@@ -10,5 +10,6 @@ endif
 
 obj-y += common/ rc/ video/
 
+obj-$(CONFIG_OF_MEDIA_VIDEO) += of_video.o
 obj-$(CONFIG_VIDEO_DEV) += radio/
 obj-$(CONFIG_DVB_CORE)  += dvb/
