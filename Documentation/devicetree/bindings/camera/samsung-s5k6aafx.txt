@@ -19,14 +19,17 @@ Optional properties:
 
 - data-lanes		   : number of physical MIPI-CSI2 data lanes used
 			     (default is 2 when this property is not specified);
-- samsung,s5k6aa-gpio-stby : specifies GPIO connected to the sensor's standby
-			     (STBYN) pin;
-- samsung,s5k6aa-gpio-rst  : specifies GPIO connected to the sensor's reset
-			     (RSTN) pin;
-- samsung,s5k6aa-inv-stby  : this property indicates the S5K6AAFX stanby signal
-			     active state is LOW (0);
-- samsung,s5k6aa-inv-rst   : this property indicates the S5K6AAFX reset signal
-			     active state is LOW (0);
+- gpios			   : specifies gpios connected to the sensor's reset
+			     reset (RSTN) and standby (STBYN)  pins, the order
+			     of gpios is: <RSTN, STBYN>; If any of these gpios
+			     is not used, its specifier shall be 0;
+- samsung,s5k6aa-gpio-lvls : this property (bits [1:0]) specifies an active
+			     state of the S5K6AAFX reset and stand-by signals;
+			     the meaning of bits is: bit[1:0] = [RST, STBY],
+			     e.g. bit[1] = 0 indicates the GPIO driving the
+			     S5K6AAFX's standby pin should be set to 1 to bring
+			     the sensor out from stand-by to normal operation
+			     state.
 - samsung,s5k6aa-hflip     : sets the default horizontal image flipping;
 - samsung,s5k6aa-vflip     : sets the default vertical image flipping;
 
@@ -52,8 +55,9 @@ Example:
 		compatible = "samsung,s5k6aafx";
 		reg = <0x3c>;
 		clock-frequency = <24000000>;
-		gpio-rst = <&gpl2 1 2 0 3>;
-		gpio-stby = <&gpl2 2 2 0 3>;
+		gpios = <&gpl2 1 2 0 3>, /* reset */
+		        <&gpl2 2 2 0 3>; /* stand-by */
+		samsung,s5k6aa-gpio-lvls = <0x0>;
 		video-bus-type = 'itu-601';
 		vdd_core-supply = <&reg0>;
 		vdda-supply = <&reg1>;

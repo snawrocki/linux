@@ -1500,26 +1500,22 @@ static int s5k6aa_configure_gpio(struct s5k6aa_gpio *pgpio,
 				 enum s5k6aa_gpio_id idx, const char *name,
 				 struct device_node *np)
 {
-	static const char * const props[][2] = {
-		{ "samsung,s5k6aa-gpio-rst", "samsung,s5k6aa-inv-rst" },
-		{ "samsung,s5k6aa-gpio-stby", "samsung,s5k6aa-inv-stby" }
-	};
-	unsigned int flags;
+	u32 gpio_levels, flags;
 	int ret;
 
-	flags = pgpio->level ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
-
 	if (np) {
-		pgpio->gpio = of_get_named_gpio(np, props[idx][0], 0);
-
-		if (of_get_property(np, props[idx][1], NULL))
-			pgpio->level = 0;
+		pgpio->gpio = of_get_gpio(np, idx);
+		if (!of_property_read_u32(np, "samsung,s5k6aa,gpio-lvls",
+					 &gpio_levels))
+			pgpio->level = (gpio_levels >> idx) & 1;
 		else
-			pgpio->level = 1;
+			pgpio->level = 0;
 	}
 
 	if (!gpio_is_valid(pgpio->gpio))
 		return 0;
+
+	flags = pgpio->level ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
 
 	ret = gpio_request_one(pgpio->gpio, flags, name);
 	if (ret < 0)
@@ -1543,20 +1539,29 @@ static void s5k6aa_free_gpios(struct s5k6aa *s5k6aa)
 static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa, struct device *dev)
 {
 	const struct s5k6aa_platform_data *pdata = dev->platform_data;
-	struct s5k6aa_gpio gpio = pdata->gpio_stby;
 	struct device_node *np = dev->of_node;
+	struct s5k6aa_gpio gpio;
 	int ret;
 
 	s5k6aa->gpio[STBY].gpio = -EINVAL;
 	s5k6aa->gpio[RST].gpio = -EINVAL;
 
+	if (pdata)
+		gpio = pdata->gpio_stby;
+	else
+		gpio.gpio = -EINVAL;
 	ret = s5k6aa_configure_gpio(&gpio, STBY, "S5K6AA_STBY", np);
-	if (!ret) {
+	if (ret == 0) {
 		s5k6aa->gpio[STBY] = gpio;
-		gpio = pdata->gpio_reset;
+		if (pdata)
+			gpio = pdata->gpio_reset;
+		else
+			gpio.gpio = -EINVAL;
 		ret = s5k6aa_configure_gpio(&gpio, RST, "S5K6AA_RST", np);
 	}
-	if (ret)
+	if (ret == 0)
+		s5k6aa->gpio[RST] = gpio;
+	else
 		s5k6aa_free_gpios(s5k6aa);
 
 	return ret;
