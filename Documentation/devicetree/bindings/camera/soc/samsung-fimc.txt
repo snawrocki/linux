@@ -75,6 +75,8 @@ The 'sensor' nodes
 Required properties:
 
  - i2c-client         : phandle to an image sensor I2C client device;
+ - video-bus-polarity : video bus signals polarity flags, see
+			Documentation/devicetree/bingings/video/video.txt;
 
 Optional properties:
 
@@ -126,6 +128,7 @@ Example:
 			 samsung,camif-mux-id = <0>;
 			 samsung,fimc-clk-id = <0>;
 			 video-bus-type = "itu-601";
+			 video-bus-polarity = <0x15>;
 		};
 	};
 

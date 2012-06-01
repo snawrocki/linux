@@ -22,6 +22,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/of_i2c.h>
+#include <media/of_video.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/types.h>
@@ -349,7 +350,7 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 	struct s5p_fimc_isp_info *pdata;
 	struct fimc_sensor_info *sensor;
 	int ret, sensor_index = 0;
-	u32 id, freq;
+	u32 val;
 
 	fmd->num_sensors = 0;
 
@@ -368,16 +369,18 @@ static int fimc_md_of_sensors_register(struct fimc_md *fmd,
 			return -EPROBE_DEFER;
 		}
 
-		ret = of_property_read_u32(node, "samsung,fimc-camclk-id", &id);
-		pdata->clk_id = ret ? 0 : id;
+		ret = of_property_read_u32(node, "samsung,fimc-camclk-id", &val);
+		pdata->clk_id = ret ? 0 : val;
 
-		ret = of_property_read_u32(i2c_node, "clock-frequency", &freq);
-		pdata->clk_frequency = ret ? 12000000UL : freq;
+		ret = of_property_read_u32(i2c_node, "clock-frequency", &val);
+		pdata->clk_frequency = ret ? 12000000UL : val;
 
-		ret = of_property_read_u32(node, "samsung,fimc-mux-id", &id);
-		pdata->mux_id = ret ? 0 : id;
+		ret = of_property_read_u32(node, "samsung,fimc-mux-id", &val);
+		pdata->mux_id = ret ? 0 : val;
 
 		pdata->bus_type = fimc_md_of_get_bus_type(node);
+		if (!v4l2_mbus_of_get_polarity(node, &val))
+			pdata->flags = val;
 
 		of_node_put(node);
 		put_device(&client->dev);
