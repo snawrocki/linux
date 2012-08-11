@@ -703,8 +703,8 @@ static int s3c_camif_vidioc_g_fmt(struct file *file, void *priv,
 	struct camif_frame *frame = &vp->out_frame;
 	const struct camif_fmt *fmt = vp->out_fmt;
 
-	pix->bytesperline = (frame->f_width * fmt->depth) / 8;
-	pix->sizeimage = pix->bytesperline * frame->f_height;
+	pix->bytesperline = frame->f_width * fmt->ybpp;
+	pix->sizeimage = vp->payload;
 
 	pix->pixelformat = fmt->fourcc;
 	pix->width = frame->f_width;
