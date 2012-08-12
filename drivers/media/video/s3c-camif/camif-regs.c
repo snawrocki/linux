@@ -253,14 +253,14 @@ void camif_hw_set_target_format(struct camif_vp *vp)
 	cfg |= CITRGFMT_IN422;
 
 	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV) {
-		if (vp->out_fmt->color != IMG_FMT_YCBCR420)
+		if (vp->out_fmt->color == IMG_FMT_YCBCR422P)
 			cfg |= CITRGFMT_OUT422;
 	} else {
 		switch (vp->out_fmt->color) {
 		case IMG_FMT_RGB565...IMG_FMT_XRGB8888:
 			cfg |= CITRGFMT_OUTFORMAT_RGB;
 			break;
-		case IMG_FMT_YCBCR420:
+		case IMG_FMT_YCBCR420...IMG_FMT_YCRCB420:
 			cfg |= CITRGFMT_OUTFORMAT_YCBCR420;
 			break;
 		case IMG_FMT_YCBYCR422...IMG_FMT_CRYCBY422:

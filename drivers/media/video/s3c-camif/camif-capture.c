@@ -255,10 +255,13 @@ static int camif_prepare_addr(struct camif_vp *vp, struct vb2_buffer *vb,
 	case 3:
 		paddr->cb = (u32)(paddr->y + pix_size);
 		/* decompose Y into Y/Cb/Cr */
-		if (vp->out_fmt->color == IMG_FMT_YCBCR420)
-			paddr->cr = (u32)(paddr->cb + (pix_size >> 2));
-		else /* 422 */
+		if (vp->out_fmt->color == IMG_FMT_YCBCR422P)
 			paddr->cr = (u32)(paddr->cb + (pix_size >> 1));
+		else /* 420 */
+			paddr->cr = (u32)(paddr->cb + (pix_size >> 2));
+
+		if (vp->out_fmt->color == IMG_FMT_YCRCB420)
+			swap(paddr->cb, paddr->cr);
 		break;
 	default:
 		return -EINVAL;

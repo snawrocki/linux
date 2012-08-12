@@ -60,6 +60,16 @@ static const struct camif_fmt camif_formats[] = {
 		.flags		= FMT_FL_S3C24XX_CODEC |
 				  FMT_FL_S3C64XX_CODEC,
 	}, {
+		.name		= "YVU 4:2:0 planar, Y/Cr/Cb",
+		.fourcc		= V4L2_PIX_FMT_YVU420,
+		.depth		= 12,
+		.ybpp		= 1,
+		.color		= IMG_FMT_YCRCB420,
+		.colplanes	= 3,
+		.flags		= FMT_FL_S3C24XX_CODEC |
+				  FMT_FL_S3C64XX_PREVIEW |
+				  FMT_FL_S3C64XX_CODEC,
+	}, {
 		.name		= "RGB565, 16 bpp",
 		.fourcc		= V4L2_PIX_FMT_RGB565X,
 		.depth		= 16,
