@@ -980,6 +980,9 @@ static int __devinit s3c24xxfb_probe(struct platform_device *pdev,
 	if (ret)
 		printk(KERN_ERR "failed to add debug attribute\n");
 
+#ifndef CONFIG_FRAMEBUFFER_CONSOLE
+	s3c2410fb_set_par(fbinfo);
+#endif
 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
 		fbinfo->node, fbinfo->fix.id);
 
