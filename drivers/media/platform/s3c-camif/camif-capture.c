@@ -401,10 +401,14 @@ static int start_streaming(struct vb2_queue *vq, unsigned int count)
 		if (!(vp->state & ST_VP_SENSOR_STREAMING)) {
 			vp->state |= ST_VP_SENSOR_STREAMING;
 			spin_unlock_irqrestore(&camif->slock, flags);
-			sensor_set_streaming(camif, 1);
+			ret = sensor_set_streaming(camif, 1);
+			if (ret) {
+				v4l2_err(&vp->vdev, "Sensor s_stream failed\n");
+				camif_hw_disable_capture(vp);
+			}
 			if (debug)
 				camif_hw_dump_regs(camif, __func__);
-			return 0;
+			return ret;
 		}
 	}
 	spin_unlock_irqrestore(&camif->slock, flags);
@@ -500,10 +504,14 @@ static void buffer_queue(struct vb2_buffer *vb)
 		spin_unlock_irqrestore(&camif->slock, flags);
 
 		if (!(vp->state & ST_VP_SENSOR_STREAMING)) {
+			if (sensor_set_streaming(camif, 1) == 0) {
+				vp->state |= ST_VP_SENSOR_STREAMING;
+			} else {
+				v4l2_err(&vp->vdev, "Sensor s_stream failed\n");
+				camif_hw_disable_capture(vp);
+			}
 			if (debug)
 				camif_hw_dump_regs(camif, __func__);
-			sensor_set_streaming(camif, 1);
-			vp->state |= ST_VP_SENSOR_STREAMING;
 		}
 		return;
 	}
