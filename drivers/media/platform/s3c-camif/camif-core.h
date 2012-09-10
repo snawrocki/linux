@@ -148,6 +148,7 @@ struct s3c_camif_variant {
 	struct camif_pix_limits pix_limits;
 	u8 ip_revision;
 	int gpios[CAMIF_NUM_GPIOS];
+	unsigned int vp_offset;
 };
 
 struct s3c_camif_drvdata {
@@ -223,6 +224,7 @@ struct camif_vp {
 	u8			rotation;
 	u8			hflip;
 	u8			vflip;
+	unsigned int		offset;
 };
 
 /* Video processing path enumeration */

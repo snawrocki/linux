@@ -1579,6 +1579,7 @@ int s3c_camif_set_defaults(struct camif_dev *camif)
 
 		vp->camif = camif;
 		vp->id = i;
+		vp->offset = camif->variant->vp_offset;
 
 		if (ip_rev == S3C244X_CAMIF_IP_REV)
 			vp->fmt_flags = i ? FMT_FL_S3C24XX_PREVIEW :
