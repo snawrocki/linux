@@ -135,7 +135,7 @@ void camif_hw_set_camera_bus(struct camif_dev *camif)
 	u32 cfg = camif_read(camif, S3C_CAMIF_REG_CIGCTRL);
 
 	cfg &= ~(CIGCTRL_INVPOLPCLK | CIGCTRL_INVPOLVSYNC |
-		 CIGCTRL_INVPOLHREF);
+		 CIGCTRL_INVPOLHREF | CIGCTRL_INVPOLFIELD);
 
 	if (flags & V4L2_MBUS_PCLK_SAMPLE_FALLING)
 		cfg |= CIGCTRL_INVPOLPCLK;
@@ -149,6 +149,12 @@ void camif_hw_set_camera_bus(struct camif_dev *camif)
 	 */
 	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
 		cfg |= CIGCTRL_INVPOLHREF; /* HREF active low */
+
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV) {
+		if (flags & V4L2_MBUS_FIELD_EVEN_LOW)
+			cfg |= CIGCTRL_INVPOLFIELD;
+		cfg |= CIGCTRL_FIELDMODE;
+	}
 
 	pr_debug("Setting CIGCTRL to: %#x\n", cfg);
 
