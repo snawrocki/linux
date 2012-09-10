@@ -224,8 +224,17 @@ void camif_hw_set_output_dma(struct camif_vp *vp)
 	unsigned int ymburst = 0, yrburst = 0;
 	u32 cfg;
 
-	/* TODO: Composition onto DMA output buffer for s3c64xx */
 	camif_hw_set_out_dma_size(vp);
+
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV) {
+		struct camif_dma_offset *offset = &frame->dma_offset;
+		/* Set the input dma offsets. */
+		cfg = S3C_CISS_OFFS_INITIAL(offset->initial);
+		cfg |= S3C_CISS_OFFS_LINE(offset->line);
+		camif_write(camif, S3C_CAMIF_REG_CISSY(vp->id), cfg);
+		camif_write(camif, S3C_CAMIF_REG_CISSCB(vp->id), cfg);
+		camif_write(camif, S3C_CAMIF_REG_CISSCR(vp->id), cfg);
+	}
 
 	/* Configure DMA burst values */
 	camif_get_dma_burst(frame->rect.width, fmt->ybpp, &ymburst, &yrburst);

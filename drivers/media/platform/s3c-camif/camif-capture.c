@@ -53,6 +53,17 @@ static void camif_cfg_video_path(struct camif_vp *vp)
 	camif_hw_set_output_dma(vp);
 }
 
+static void camif_prepare_dma_offset(struct camif_vp *vp)
+{
+	struct camif_frame *f = &vp->out_frame;
+
+	f->dma_offset.initial = f->rect.top*f->f_width + f->rect.left;
+	f->dma_offset.line = f->f_width - (f->rect.left + f->rect.width);
+
+	pr_debug("dma_offset: initial=%d, line=%d\n",
+				f->dma_offset.initial, f->dma_offset.line);
+}
+
 static int s3c_camif_hw_init(struct camif_dev *camif, struct camif_vp *vp)
 {
 	unsigned long flags;
@@ -90,6 +101,7 @@ static int s3c_camif_hw_vp_init(struct camif_dev *camif, struct camif_vp *vp)
 		return -EINVAL;
 
 	spin_lock_irqsave(&camif->slock, flags);
+	camif_prepare_dma_offset(vp);
 	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
 		camif_hw_clear_fifo_overflow(vp);
 	camif_cfg_video_path(vp);
@@ -352,6 +364,7 @@ irqreturn_t s3c_camif_irq_handler(int irq, void *priv)
 	}
 
 	if (vp->state & ST_VP_CONFIG) {
+		camif_prepare_dma_offset(vp);
 		camif_hw_set_camera_crop(camif);
 		camif_hw_set_scaler(vp);
 		camif_hw_set_flip(vp);

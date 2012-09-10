@@ -98,15 +98,27 @@ struct camif_fmt {
 };
 
 /**
+ * struct camif_dma_offset - pixel offset information for DMA
+ * @initial: offset (in pixels) to first pixel
+ * @line: offset (in pixels) from end of line to start of next line
+ */
+struct camif_dma_offset {
+	int	initial;
+	int	line;
+};
+
+/**
  * struct camif_frame - source/target frame properties
  * @f_width: full pixel width
  * @f_height: full pixel height
  * @rect: crop/composition rectangle
+ * @dma_offset: DMA offset configuration
  */
 struct camif_frame {
 	u16 f_width;
 	u16 f_height;
 	struct v4l2_rect rect;
+	struct camif_dma_offset dma_offset;
 };
 
 /* CAMIF clocks enumeration */

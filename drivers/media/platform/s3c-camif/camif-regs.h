@@ -231,6 +231,8 @@
 #define S3C_CAMIF_REG_CISSY(id)			(0x12c + (id) * 0x0c)
 #define S3C_CAMIF_REG_CISSCB(id)		(0x130 + (id) * 0x0c)
 #define S3C_CAMIF_REG_CISSCR(id)		(0x134 + (id) * 0x0c)
+#define S3C_CISS_OFFS_INITIAL(x)		((x) << 16)
+#define S3C_CISS_OFFS_LINE(x)			((x) << 0)
 
 /* ------------------------------------------------------------------ */
 
