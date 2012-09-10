@@ -175,7 +175,7 @@ void camif_hw_set_output_addr(struct camif_vp *vp,
 								paddr->cr);
 	}
 
-	pr_debug("dst_buf[%d]: %#X, cb: %#X, cr: %#X",
+	pr_debug("dst_buf[%d]: %#X, cb: %#X, cr: %#X\n",
 		 i, paddr->y, paddr->cb, paddr->cr);
 }
 
