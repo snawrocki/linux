@@ -491,7 +491,8 @@ void camif_hw_enable_capture(struct camif_vp *vp)
 	cfg = camif_read(camif, S3C_CAMIF_REG_CIIMGCPT(vp->offset));
 	camif->stream_count++;
 
-	/* s3c64xx: CIIMGCPT_CPT_FREN_ENABLE(vp->id); */
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+		cfg |= CIIMGCPT_CPT_FREN_ENABLE(vp->id);
 
 	if (vp->scaler.enable)
 		cfg |= CIIMGCPT_IMGCPTEN_SC(vp->id);
