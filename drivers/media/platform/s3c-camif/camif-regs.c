@@ -25,7 +25,9 @@ void camif_hw_reset(struct camif_dev *camif)
 
 	/* S/W reset */
 	cfg = camif_read(camif, S3C_CAMIF_REG_CIGCTRL);
-	cfg |= CIGCTRL_SWRST;  /* | CIGCTRL_IRQ_LEVEL); */
+	cfg |= CIGCTRL_SWRST;
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+		cfg |= CIGCTRL_IRQ_LEVEL;
 	camif_write(camif, S3C_CAMIF_REG_CIGCTRL, cfg);
 	udelay(10);
 
