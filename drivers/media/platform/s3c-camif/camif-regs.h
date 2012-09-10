@@ -28,7 +28,7 @@
 #define  CISRCFMT_ORDER422_CBYCRY		(2 << 14)
 #define  CISRCFMT_ORDER422_CRYCBY		(3 << 14)
 #define  CISRCFMT_ORDER422_MASK			(3 << 14)
-#define  CISRCFMT_SIZE_CAM_MASK			(0xfff << 16 | 0xfff)
+#define  CISRCFMT_SIZE_CAM_MASK			(0x1fff << 16 | 0x1fff)
 
 /* Window offset */
 #define S3C_CAMIF_REG_CIWDOFST			0x04
@@ -78,11 +78,11 @@
 #define S3C_CAMIF_REG_CITRGFMT(id, _offs)	(0x48 + (id) * (0x34 + (_offs)))
 #define  CITRGFMT_IN422				(1 << 31) /* only for s3c24xx */
 #define  CITRGFMT_OUT422			(1 << 30) /* only for s3c24xx */
-#define  CITRGFMT_OUTFORMAT_YCBCR420		(0 << 29)
-#define  CITRGFMT_OUTFORMAT_YCBCR422		(1 << 29)
-#define  CITRGFMT_OUTFORMAT_YCBCR422I		(2 << 29)
-#define  CITRGFMT_OUTFORMAT_RGB			(3 << 29)
-#define  CITRGFMT_OUTFORMAT_MASK		(3 << 29)
+#define  CITRGFMT_OUTFORMAT_YCBCR420		(0 << 29) /* only for s3c6410 */
+#define  CITRGFMT_OUTFORMAT_YCBCR422		(1 << 29) /* only for s3c6410 */
+#define  CITRGFMT_OUTFORMAT_YCBCR422I		(2 << 29) /* only for s3c6410 */
+#define  CITRGFMT_OUTFORMAT_RGB			(3 << 29) /* only for s3c6410 */
+#define  CITRGFMT_OUTFORMAT_MASK		(3 << 29) /* only for s3c6410 */
 #define  CITRGFMT_TARGETHSIZE(x)		((x) << 16)
 #define  CITRGFMT_FLIP_NORMAL			(0 << 14)
 #define  CITRGFMT_FLIP_X_MIRROR			(1 << 14)
@@ -92,7 +92,7 @@
 /* Preview path only */
 #define  CITRGFMT_ROT90_PR			(1 << 13)
 #define  CITRGFMT_TARGETVSIZE(x)		((x) << 0)
-#define  CITRGFMT_TARGETSIZE_MASK		((0xfff << 16) | 0xfff)
+#define  CITRGFMT_TARGETSIZE_MASK		((0x1fff << 16) | 0x1fff)
 
 /* CICOCTRL, CIPRCTRL. Output DMA control. */
 #define S3C_CAMIF_REG_CICTRL(id, _offs)		(0x4c + (id) * (0x34 + (_offs)))
@@ -116,12 +116,12 @@
 /* CICOSCCTRL, CIPRSCCTRL. Main scaler control. */
 #define S3C_CAMIF_REG_CISCCTRL(id, _offs)	(0x58 + (id) * (0x34 + (_offs)))
 #define  CISCCTRL_SCALERBYPASS			(1 << 31)
-/* s3c244x preview path only */
+/* s3c244x preview path only, s3c64xx both */
 #define  CIPRSCCTRL_SAMPLE			(1 << 31)
 /* 0 - 16-bit RGB, 1 - 24-bit RGB */
-#define  CIPRSCCTRL_RGB_FORMAT_24BIT		(1 << 30)
-#define  CIPRSCCTRL_SCALEUP_H			(1 << 29)
-#define  CIPRSCCTRL_SCALEUP_V			(1 << 28)
+#define  CIPRSCCTRL_RGB_FORMAT_24BIT		(1 << 30) /* only for s3c244x */
+#define  CIPRSCCTRL_SCALEUP_H			(1 << 29) /* only for s3c244x */
+#define  CIPRSCCTRL_SCALEUP_V			(1 << 28) /* only for s3c244x */
 /* s3c64xx */
 #define  CISCCTRL_SCALEUP_H			(1 << 30)
 #define  CISCCTRL_SCALEUP_V			(1 << 29)
@@ -161,7 +161,7 @@
 #define  CISTATUS_IMGCPTEN_STATUS		(1 << 22)
 #define  CISTATUS_IMGCPTENSC_STATUS		(1 << 21)
 #define  CISTATUS_VSYNC_A_STATUS		(1 << 20)
-#define  CISTATUS_FRAMEEND_STATUS		(1 << 19)
+#define  CISTATUS_FRAMEEND_STATUS		(1 << 19) /* 17 on s3c64xx */
 
 /* Image capture enable */
 #define S3C_CAMIF_REG_CIIMGCPT(_offs)		(0xa0 + (_offs))
@@ -177,7 +177,7 @@
 
 /* Image effects */
 #define S3C_CAMIF_REG_CIIMGEFF			0xd0
-#define  CIIMGEFF_IE_ENABLE(id)			(1 << 31 + (id))
+#define  CIIMGEFF_IE_ENABLE(id)			(1 << (30 + (id)))
 /* Image effect: 1 - after scaler, 0 - before scaler */
 #define  CIIMGEFF_IE_AFTER_SC			(1 << 29)
 #define  CIIMGEFF_FIN_MASK			(7 << 26)
