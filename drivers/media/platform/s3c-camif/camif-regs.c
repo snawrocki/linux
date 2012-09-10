@@ -380,7 +380,51 @@ void camif_s3c244x_hw_set_scaler(struct camif_vp *vp)
 
 void camif_s3c64xx_hw_set_scaler(struct camif_vp *vp)
 {
-	/* TODO */
+	struct camif_dev *camif = vp->camif;
+	struct camif_scaler *scaler = &vp->scaler;
+	unsigned int color = vp->out_fmt->color;
+	u32 cfg;
+
+	camif_hw_set_prescaler(vp);
+
+	cfg = camif_read(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, vp->offset));
+
+	cfg &= ~(CISCCTRL_CSCR2Y_WIDE | CISCCTRL_CSCY2R_WIDE
+		| CISCCTRL_SCALEUP_H | CISCCTRL_SCALEUP_V
+		| CISCCTRL_SCALERBYPASS | CISCCTRL_ONE2ONE
+		| CISCCTRL_INRGB_FMT_MASK | CISCCTRL_OUTRGB_FMT_MASK
+		| CISCCTRL_INTERLACE | CISCCTRL_EXTRGB_EXTENSION
+		| CISCCTRL_MAIN_RATIO_MASK);
+
+	cfg |= (CISCCTRL_CSCR2Y_WIDE | CISCCTRL_CSCY2R_WIDE);
+
+	if (!scaler->enable) {
+		cfg |= CISCCTRL_SCALERBYPASS;
+	} else {
+		if (scaler->scaleup_h)
+			cfg |= CISCCTRL_SCALEUP_H;
+		if (scaler->scaleup_v)
+			cfg |= CISCCTRL_SCALEUP_V;
+		if (scaler->copy)
+			cfg |= CISCCTRL_ONE2ONE;
+	}
+
+	switch (color) {
+	case IMG_FMT_RGB666:
+		cfg |= CISCCTRL_OUTRGB_FMT_RGB666;
+		break;
+	case IMG_FMT_XRGB8888:
+		cfg |= CISCCTRL_OUTRGB_FMT_RGB888;
+		break;
+	}
+
+	cfg |= (scaler->main_h_ratio & 0x1ff) << 16;
+	cfg |= scaler->main_v_ratio & 0x1ff;
+
+	camif_write(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, vp->offset), cfg);
+
+	pr_debug("main: h_ratio: %#x, v_ratio: %#x",
+		 scaler->main_h_ratio, scaler->main_v_ratio);
 }
 
 void camif_hw_set_scaler(struct camif_vp *vp)
