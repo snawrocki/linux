@@ -472,6 +472,17 @@ void camif_hw_set_lastirq(struct camif_vp *vp, int enable)
 	camif_write(vp->camif, addr, cfg);
 }
 
+void camif_hw_set_effect(struct camif_vp *vp, bool active)
+{
+	u32 cfg = 0;
+
+	if (active) {
+		/* TODO: effects support on 64xx */
+	}
+
+	camif_write(vp->camif, S3C_CAMIF_REG_CIIMGEFF, cfg);
+}
+
 void camif_hw_enable_capture(struct camif_vp *vp)
 {
 	struct camif_dev *camif = vp->camif;

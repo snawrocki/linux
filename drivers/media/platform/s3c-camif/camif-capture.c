@@ -105,6 +105,8 @@ static int s3c_camif_hw_vp_init(struct camif_dev *camif, struct camif_vp *vp)
 	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
 		camif_hw_clear_fifo_overflow(vp);
 	camif_cfg_video_path(vp);
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+		camif_hw_set_effect(vp, false);
 	vp->state &= ~ST_VP_CONFIG;
 
 	spin_unlock_irqrestore(&camif->slock, flags);
