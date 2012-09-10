@@ -62,7 +62,8 @@ static int s3c_camif_hw_init(struct camif_dev *camif, struct camif_vp *vp)
 
 	spin_lock_irqsave(&camif->slock, flags);
 
-	camif_hw_clear_fifo_overflow(vp);
+	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
+		camif_hw_clear_fifo_overflow(vp);
 	camif_hw_set_camera_bus(camif);
 	camif_hw_set_source_format(camif);
 	camif_hw_set_camera_crop(camif);
@@ -89,7 +90,8 @@ static int s3c_camif_hw_vp_init(struct camif_dev *camif, struct camif_vp *vp)
 		return -EINVAL;
 
 	spin_lock_irqsave(&camif->slock, flags);
-	camif_hw_clear_fifo_overflow(vp);
+	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
+		camif_hw_clear_fifo_overflow(vp);
 	camif_cfg_video_path(vp);
 	vp->state &= ~ST_VP_CONFIG;
 
@@ -286,7 +288,8 @@ irqreturn_t s3c_camif_irq_handler(int irq, void *priv)
 
 	status = camif_hw_get_status(vp);
 
-	if (status & CISTATUS_OVF_MASK) {
+	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV
+		&& status & CISTATUS_OVF_MASK) {
 		camif_hw_clear_fifo_overflow(vp);
 		goto unlock;
 	}
