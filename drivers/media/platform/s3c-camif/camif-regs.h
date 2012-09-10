@@ -256,7 +256,8 @@ void camif_hw_dump_regs(struct camif_dev *camif, const char *label);
 
 static inline u32 camif_hw_get_status(struct camif_vp *vp)
 {
-	return readl(vp->camif->io_base + S3C_CAMIF_REG_CISTATUS(vp->id, 0));
+	return readl(vp->camif->io_base + S3C_CAMIF_REG_CISTATUS(vp->id,
+								vp->offset));
 }
 
 #endif /* CAMIF_REGS_H_ */

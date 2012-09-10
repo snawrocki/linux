@@ -173,10 +173,10 @@ static void camif_hw_set_out_dma_size(struct camif_vp *vp)
 	struct camif_frame *frame = &vp->out_frame;
 	u32 cfg;
 
-	cfg = camif_read(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0));
+	cfg = camif_read(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset));
 	cfg &= ~CITRGFMT_TARGETSIZE_MASK;
 	cfg |= (frame->f_width << 16) | frame->f_height;
-	camif_write(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0), cfg);
+	camif_write(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset), cfg);
 }
 
 static void camif_get_dma_burst(u32 width, u32 ybpp, u32 *mburst, u32 *rburst)
@@ -219,13 +219,13 @@ void camif_hw_set_output_dma(struct camif_vp *vp)
 	/* Configure DMA burst values */
 	camif_get_dma_burst(frame->rect.width, fmt->ybpp, &ymburst, &yrburst);
 
-	cfg = camif_read(camif, S3C_CAMIF_REG_CICTRL(vp->id, 0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CICTRL(vp->id, vp->offset));
 	cfg &= ~CICTRL_BURST_MASK;
 
 	cfg |= CICTRL_YBURST1(ymburst) | CICTRL_YBURST2(yrburst);
 	cfg |= CICTRL_CBURST1(ymburst / 2) | CICTRL_CBURST2(yrburst / 2);
 
-	camif_write(camif, S3C_CAMIF_REG_CICTRL(vp->id, 0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CICTRL(vp->id, vp->offset), cfg);
 
 	pr_debug("ymburst: %u, yrburst: %u\n", ymburst, yrburst);
 }
@@ -246,7 +246,7 @@ void camif_hw_set_target_format(struct camif_vp *vp)
 	pr_debug("fw: %d, fh: %d color: %d\n", frame->f_width,
 		 frame->f_height, vp->out_fmt->color);
 
-	cfg = camif_read(camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset));
 	cfg &= ~(CITRGFMT_TARGETSIZE_MASK | CITRGFMT_OUT422);
 
 	/* We currently support only YCbCr 4:2:2 at the camera input */
@@ -277,18 +277,19 @@ void camif_hw_set_target_format(struct camif_vp *vp)
 		cfg |= (frame->f_height << 16) | frame->f_width;
 	else
 		cfg |= (frame->f_width << 16) | frame->f_height;
-	camif_write(camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset), cfg);
 
 	/* Target area, output pixel width * height */
-	cfg = camif_read(camif, S3C_CAMIF_REG_CITAREA(vp->id, 0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CITAREA(vp->id, vp->offset));
 	cfg &= ~CITAREA_MASK;
 	cfg |= (frame->f_width * frame->f_height);
-	camif_write(camif, S3C_CAMIF_REG_CITAREA(vp->id, 0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CITAREA(vp->id, vp->offset), cfg);
 }
 
 void camif_hw_set_flip(struct camif_vp *vp)
 {
-	u32 cfg = camif_read(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0));
+	u32 cfg = camif_read(vp->camif,
+				S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset));
 
 	cfg &= ~CITRGFMT_FLIP_MASK;
 
@@ -297,7 +298,7 @@ void camif_hw_set_flip(struct camif_vp *vp)
 	if (vp->vflip)
 		cfg |= CITRGFMT_FLIP_X_MIRROR;
 
-	camif_write(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, 0), cfg);
+	camif_write(vp->camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset), cfg);
 }
 
 static void camif_hw_set_prescaler(struct camif_vp *vp)
@@ -306,7 +307,7 @@ static void camif_hw_set_prescaler(struct camif_vp *vp)
 	struct camif_scaler *sc = &vp->scaler;
 	u32 cfg, shfactor, addr;
 
-	addr = S3C_CAMIF_REG_CISCPRERATIO(vp->id, 0);
+	addr = S3C_CAMIF_REG_CISCPRERATIO(vp->id, vp->offset);
 
 	shfactor = 10 - (sc->h_shift + sc->v_shift);
 	cfg = shfactor << 28;
@@ -315,7 +316,7 @@ static void camif_hw_set_prescaler(struct camif_vp *vp)
 	camif_write(camif, addr, cfg);
 
 	cfg = (sc->pre_dst_width << 16) | sc->pre_dst_height;
-	camif_write(camif, S3C_CAMIF_REG_CISCPREDST(vp->id, 0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CISCPREDST(vp->id, vp->offset), cfg);
 }
 
 void camif_s3c244x_hw_set_scaler(struct camif_vp *vp)
@@ -327,7 +328,7 @@ void camif_s3c244x_hw_set_scaler(struct camif_vp *vp)
 
 	camif_hw_set_prescaler(vp);
 
-	cfg = camif_read(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, 0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, vp->offset));
 
 	cfg &= ~(CISCCTRL_SCALEUP_MASK | CISCCTRL_SCALERBYPASS |
 		 CISCCTRL_MAIN_RATIO_MASK | CIPRSCCTRL_RGB_FORMAT_24BIT);
@@ -359,7 +360,7 @@ void camif_s3c244x_hw_set_scaler(struct camif_vp *vp)
 		cfg |= CIPRSCCTRL_SAMPLE;
 	}
 
-	camif_write(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, 0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CISCCTRL(vp->id, vp->offset), cfg);
 
 	pr_debug("main: h_ratio: %#x, v_ratio: %#x",
 		 scaler->main_h_ratio, scaler->main_v_ratio);
@@ -382,7 +383,7 @@ void camif_hw_set_scaler(struct camif_vp *vp)
 
 void camif_hw_enable_scaler(struct camif_vp *vp, bool on)
 {
-	u32 addr = S3C_CAMIF_REG_CISCCTRL(vp->id, 0);
+	u32 addr = S3C_CAMIF_REG_CISCCTRL(vp->id, vp->offset);
 	u32 cfg;
 
 	cfg = camif_read(vp->camif, addr);
@@ -395,7 +396,7 @@ void camif_hw_enable_scaler(struct camif_vp *vp, bool on)
 
 void camif_hw_set_lastirq(struct camif_vp *vp)
 {
-	u32 addr = S3C_CAMIF_REG_CICTRL(vp->id, 0);
+	u32 addr = S3C_CAMIF_REG_CICTRL(vp->id, vp->offset);
 	u32 cfg;
 
 	cfg = camif_read(vp->camif, addr);
@@ -408,7 +409,7 @@ void camif_hw_enable_capture(struct camif_vp *vp)
 	struct camif_dev *camif = vp->camif;
 	u32 cfg;
 
-	cfg = camif_read(camif, S3C_CAMIF_REG_CIIMGCPT(0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CIIMGCPT(vp->offset));
 	camif->stream_count++;
 
 	/* s3c64xx: CIIMGCPT_CPT_FREN_ENABLE(vp->id); */
@@ -419,7 +420,7 @@ void camif_hw_enable_capture(struct camif_vp *vp)
 	if (camif->stream_count == 1)
 		cfg |= CIIMGCPT_IMGCPTEN;
 
-	camif_write(camif, S3C_CAMIF_REG_CIIMGCPT(0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CIIMGCPT(vp->offset), cfg);
 
 	pr_debug("CIIMGCPT: %#x, camif->stream_count: %d\n",
 		 cfg, camif->stream_count);
@@ -430,7 +431,7 @@ void camif_hw_disable_capture(struct camif_vp *vp)
 	struct camif_dev *camif = vp->camif;
 	u32 cfg;
 
-	cfg = camif_read(camif, S3C_CAMIF_REG_CIIMGCPT(0));
+	cfg = camif_read(camif, S3C_CAMIF_REG_CIIMGCPT(vp->offset));
 	cfg &= ~CIIMGCPT_IMGCPTEN_SC(vp->id);
 
 	if (WARN_ON(--(camif->stream_count) < 0))
@@ -442,7 +443,7 @@ void camif_hw_disable_capture(struct camif_vp *vp)
 	pr_debug("CIIMGCPT: %#x, camif->stream_count: %d\n",
 		 cfg, camif->stream_count);
 
-	camif_write(camif, S3C_CAMIF_REG_CIIMGCPT(0), cfg);
+	camif_write(camif, S3C_CAMIF_REG_CIIMGCPT(vp->offset), cfg);
 }
 
 void camif_hw_dump_regs(struct camif_dev *camif, const char *label)
