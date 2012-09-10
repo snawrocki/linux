@@ -37,7 +37,11 @@
 
 static char *camif_clocks[CLK_MAX_NUM] = {
 	[CLK_GATE]	= "camif",
+#ifdef CONFIG_ARCH_S3C24XX
 	[CLK_CAM]	= "camif-upll",
+#else
+	[CLK_CAM]	= "camera",
+#endif
 };
 
 static const struct camif_fmt camif_formats[] = {
@@ -580,7 +584,7 @@ static int s3c_camif_runtime_suspend(struct device *dev)
 	clk_disable(camif->clock[CLK_GATE]);
 	return 0;
 }
-
+#ifdef CONFIG_ARCH_S3C24XX
 static const struct s3c_camif_variant s3c244x_camif_variant = {
 	.vp_pix_limits = {
 		[VP_CODEC] = {
@@ -614,12 +618,58 @@ static struct s3c_camif_drvdata s3c244x_camif_drvdata = {
 	.variant	= &s3c244x_camif_variant,
 	.bus_clk_freq	= 24000000UL,
 };
+#endif
+
+#ifdef CONFIG_ARCH_S3C64XX
+static const struct s3c_camif_variant s3c6410_camif_variant = {
+	.vp_pix_limits = {
+		[VP_CODEC] = {
+			.max_out_width		= 4096,
+			.max_sc_out_width	= 2048,
+			.out_width_align	= 16,
+			.min_out_width		= 16,
+			.max_height		= 4096,
+		},
+		[VP_PREVIEW] = {
+			.max_out_width		= 4096,
+			.max_sc_out_width	= 720,
+			.out_width_align	= 16,
+			.min_out_width		= 16,
+			.max_height		= 4096,
+		}
+	},
+	.pix_limits = {
+		.win_hor_offset_align	= 8,
+	},
+	.ip_revision = S3C6410_CAMIF_IP_REV,
+	.gpios = {
+		S3C64XX_GPF(0), S3C64XX_GPF(1), S3C64XX_GPF(2),
+		S3C64XX_GPF(4), S3C64XX_GPF(5), S3C64XX_GPF(6),
+		S3C64XX_GPF(7), S3C64XX_GPF(8), S3C64XX_GPF(9),
+		S3C64XX_GPF(10), S3C64XX_GPF(11), S3C64XX_GPF(12),
+	},
+	.vp_offset = 0x20,
+};
+
+static struct s3c_camif_drvdata s3c6410_camif_drvdata = {
+	.variant	= &s3c6410_camif_variant,
+	.bus_clk_freq	= 133000000UL,
+};
+#endif
 
 static struct platform_device_id s3c_camif_driver_ids[] = {
+#ifdef CONFIG_ARCH_S3C24XX
 	{
 		.name		= "s3c2440-camif",
 		.driver_data	= (unsigned long)&s3c244x_camif_drvdata,
 	},
+#endif
+#ifdef CONFIG_ARCH_S3C64XX
+	{
+		.name		= "s3c6410-camif",
+		.driver_data	= (unsigned long)&s3c6410_camif_drvdata,
+	},
+#endif
 	{ },
 };
 MODULE_DEVICE_TABLE(platform, s3c_camif_driver_ids);
