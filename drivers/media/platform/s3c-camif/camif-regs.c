@@ -167,9 +167,12 @@ void camif_hw_set_output_addr(struct camif_vp *vp,
 	struct camif_dev *camif = vp->camif;
 
 	camif_write(camif, S3C_CAMIF_REG_CIYSA(vp->id, i), paddr->y);
-	if (vp->id == VP_CODEC) {
-		camif_write(camif, S3C_CAMIF_REG_CICOCBSA(i), paddr->cb);
-		camif_write(camif, S3C_CAMIF_REG_CICOCRSA(i), paddr->cr);
+	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV
+		|| vp->id == VP_CODEC) {
+		camif_write(camif, S3C_CAMIF_REG_CICBSA(vp->id, i),
+								paddr->cb);
+		camif_write(camif, S3C_CAMIF_REG_CICRSA(vp->id, i),
+								paddr->cr);
 	}
 
 	pr_debug("dst_buf[%d]: %#X, cb: %#X, cr: %#X",
@@ -465,17 +468,17 @@ void camif_hw_dump_regs(struct camif_dev *camif, const char *label)
 		{ S3C_CAMIF_REG_CIGCTRL,		"CIGCTRL" },
 		{ S3C_CAMIF_REG_CIWDOFST2,		"CIWDOFST2" },
 		{ S3C_CAMIF_REG_CIYSA(0, 0),		"CICOYSA0" },
-		{ S3C_CAMIF_REG_CICOCBSA(0),		"CICOCBSA0" },
-		{ S3C_CAMIF_REG_CICOCRSA(0),		"CICOCRSA0" },
+		{ S3C_CAMIF_REG_CICBSA(0, 0),		"CICOCBSA0" },
+		{ S3C_CAMIF_REG_CICRSA(0, 0),		"CICOCRSA0" },
 		{ S3C_CAMIF_REG_CIYSA(0, 1),		"CICOYSA1" },
-		{ S3C_CAMIF_REG_CICOCBSA(1),		"CICOCBSA1" },
-		{ S3C_CAMIF_REG_CICOCRSA(1),		"CICOCRSA1" },
+		{ S3C_CAMIF_REG_CICBSA(0, 1),		"CICOCBSA1" },
+		{ S3C_CAMIF_REG_CICRSA(0, 1),		"CICOCRSA1" },
 		{ S3C_CAMIF_REG_CIYSA(0, 2),		"CICOYSA2" },
-		{ S3C_CAMIF_REG_CICOCBSA(2),		"CICOCBSA2" },
-		{ S3C_CAMIF_REG_CICOCRSA(2),		"CICOCRSA2" },
+		{ S3C_CAMIF_REG_CICBSA(0, 2),		"CICOCBSA2" },
+		{ S3C_CAMIF_REG_CICRSA(0, 2),		"CICOCRSA2" },
 		{ S3C_CAMIF_REG_CIYSA(0, 3),		"CICOYSA3" },
-		{ S3C_CAMIF_REG_CICOCBSA(3),		"CICOCBSA3" },
-		{ S3C_CAMIF_REG_CICOCRSA(3),		"CICOCRSA3" },
+		{ S3C_CAMIF_REG_CICBSA(0, 3),		"CICOCBSA3" },
+		{ S3C_CAMIF_REG_CICRSA(0, 3),		"CICOCRSA3" },
 		{ S3C_CAMIF_REG_CIYSA(1, 0),		"CIPRYSA0" },
 		{ S3C_CAMIF_REG_CIYSA(1, 1),		"CIPRYSA1" },
 		{ S3C_CAMIF_REG_CIYSA(1, 2),		"CIPRYSA2" },

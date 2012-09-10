@@ -70,9 +70,9 @@
 /* Y DMA output frame start address. n = 0..3. */
 #define S3C_CAMIF_REG_CIYSA(id, n)		(0x18 + (id) * 0x54 + (n) * 4)
 /* Cb plane output DMA start address. n = 0..3. Only codec path. */
-#define S3C_CAMIF_REG_CICOCBSA(n)		(0x28 + (n) * 4)
+#define S3C_CAMIF_REG_CICBSA(id, n)		(0x28 + (id) * 0x54 + (n) * 4)
 /* Cr plane output DMA start address. n = 0..3. Only codec path. */
-#define S3C_CAMIF_REG_CICOCRSA(n)		(0x38 + (n) * 4)
+#define S3C_CAMIF_REG_CICRSA(id, n)		(0x38 + (id) * 0x54 + (n) * 4)
 
 /* CICOTRGFMT, CIPRTRGFMT - Target format */
 #define S3C_CAMIF_REG_CITRGFMT(id, _offs)	(0x48 + (id) * (0x34 + (_offs)))
