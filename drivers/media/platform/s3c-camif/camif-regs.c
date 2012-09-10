@@ -258,15 +258,16 @@ void camif_hw_set_target_format(struct camif_vp *vp)
 		 frame->f_height, vp->out_fmt->color);
 
 	cfg = camif_read(camif, S3C_CAMIF_REG_CITRGFMT(vp->id, vp->offset));
-	cfg &= ~(CITRGFMT_TARGETSIZE_MASK | CITRGFMT_OUT422);
-
-	/* We currently support only YCbCr 4:2:2 at the camera input */
-	cfg |= CITRGFMT_IN422;
+	cfg &= ~CITRGFMT_TARGETSIZE_MASK;
 
 	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV) {
+		/* We currently support only YCbCr 4:2:2 at the camera input */
+		cfg |= CITRGFMT_IN422;
+		cfg &= ~CITRGFMT_OUT422;
 		if (vp->out_fmt->color == IMG_FMT_YCBCR422P)
 			cfg |= CITRGFMT_OUT422;
 	} else {
+		cfg &= ~CITRGFMT_OUTFORMAT_MASK;
 		switch (vp->out_fmt->color) {
 		case IMG_FMT_RGB565...IMG_FMT_XRGB8888:
 			cfg |= CITRGFMT_OUTFORMAT_RGB;
