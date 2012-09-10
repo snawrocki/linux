@@ -574,6 +574,7 @@ static int s3c_camif_runtime_resume(struct device *dev)
 	struct camif_dev *camif = dev_get_drvdata(dev);
 
 	clk_enable(camif->clock[CLK_GATE]);
+	clk_enable(camif->clock[CLK_CAM]);
 	return 0;
 }
 
@@ -581,6 +582,7 @@ static int s3c_camif_runtime_suspend(struct device *dev)
 {
 	struct camif_dev *camif = dev_get_drvdata(dev);
 
+	clk_disable(camif->clock[CLK_CAM]);
 	clk_disable(camif->clock[CLK_GATE]);
 	return 0;
 }
