@@ -40,7 +40,7 @@ void camif_hw_reset(struct camif_dev *camif)
 void camif_hw_clear_pending_irq(struct camif_vp *vp)
 {
 	u32 cfg = camif_read(vp->camif, S3C_CAMIF_REG_CIGCTRL);
-	cfg &= ~CIGCTRL_IRQ_CLR(vp->id);
+	cfg |= CIGCTRL_IRQ_CLR(vp->id);
 	camif_write(vp->camif, S3C_CAMIF_REG_CIGCTRL, cfg);
 }
 
