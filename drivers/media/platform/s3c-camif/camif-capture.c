@@ -301,10 +301,11 @@ irqreturn_t s3c_camif_irq_handler(int irq, void *priv)
 		} else if (vp->state & ST_VP_LASTIRQ) {
 			camif_hw_disable_capture(vp);
 			camif_hw_enable_scaler(vp, false);
+			camif_hw_set_lastirq(vp, false);
 			vp->state |= ST_VP_OFF;
 		} else {
 			/* Disable capture, enable last IRQ */
-			camif_hw_set_lastirq(vp);
+			camif_hw_set_lastirq(vp, true);
 			vp->state |= ST_VP_LASTIRQ;
 		}
 	}

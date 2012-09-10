@@ -237,7 +237,7 @@
 void camif_hw_reset(struct camif_dev *camif);
 void camif_hw_clear_pending_irq(struct camif_vp *vp);
 void camif_hw_clear_fifo_overflow(struct camif_vp *vp);
-void camif_hw_set_lastirq(struct camif_vp *vp);
+void camif_hw_set_lastirq(struct camif_vp *vp, int enable);
 void camif_hw_set_input_path(struct camif_vp *vp);
 void camif_hw_enable_scaler(struct camif_vp *vp, bool on);
 void camif_hw_enable_capture(struct camif_vp *vp);

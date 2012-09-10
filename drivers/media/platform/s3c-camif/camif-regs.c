@@ -450,13 +450,16 @@ void camif_hw_enable_scaler(struct camif_vp *vp, bool on)
 	camif_write(vp->camif, addr, cfg);
 }
 
-void camif_hw_set_lastirq(struct camif_vp *vp)
+void camif_hw_set_lastirq(struct camif_vp *vp, int enable)
 {
 	u32 addr = S3C_CAMIF_REG_CICTRL(vp->id, vp->offset);
 	u32 cfg;
 
 	cfg = camif_read(vp->camif, addr);
-	cfg |= CICTRL_LASTIRQ_ENABLE;
+	if (enable)
+		cfg |= CICTRL_LASTIRQ_ENABLE;
+	else
+		cfg &= ~CICTRL_LASTIRQ_ENABLE;
 	camif_write(vp->camif, addr, cfg);
 }
 
