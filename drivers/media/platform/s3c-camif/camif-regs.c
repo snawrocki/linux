@@ -275,11 +275,11 @@ void camif_hw_set_target_format(struct camif_vp *vp)
 		case IMG_FMT_YCBCR420...IMG_FMT_YCRCB420:
 			cfg |= CITRGFMT_OUTFORMAT_YCBCR420;
 			break;
+		case IMG_FMT_YCBCR422P:
+			cfg |= CITRGFMT_OUTFORMAT_YCBCR422;
+			break;
 		case IMG_FMT_YCBYCR422...IMG_FMT_CRYCBY422:
-			if (vp->out_fmt->colplanes == 1)
-				cfg |= CITRGFMT_OUTFORMAT_YCBCR422I;
-			else
-				cfg |= CITRGFMT_OUTFORMAT_YCBCR422;
+			cfg |= CITRGFMT_OUTFORMAT_YCBCR422I;
 			break;
 		}
 	}
