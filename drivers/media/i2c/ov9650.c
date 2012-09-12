@@ -36,25 +36,22 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
 /*
  * OV9650 register definitions
  */
-#define OV9650_MANUFACT_ID	0x7fa2
-#define OV9650_PRODUCT_ID	0x9650
 
-#define REG_GAIN		0x00	/* Gain lower 8 bits (rest in vref) */
-#define REG_BLUE		0x01	/* blue gain */
-#define REG_RED			0x02	/* red gain */
-#define REG_VREF		0x03	/* Pieces of GAIN, VSTART, VSTOP */
-#define REG_COM1		0x04	/* Control 1 */
-#define  COM1_CCIR656		0x40	/* CCIR656 enable */
-#define REG_BAVE		0x05	/* U/B Average level */
-#define REG_GbAVE		0x06	/* Y/Gb Average level */
-#define REG_GrAVE		0x07	/* Cr Average Level */
-#define REG_RAVE		0x08	/* V/R Average level */
-#define REG_COM2		0x09	/* Control 2 */
-#define  COM2_SSLEEP		0x10	/* Soft sleep mode */
+#define REG_GAIN		0x00
+#define REG_BLUE		0x01
+#define REG_RED			0x02
+#define REG_VREF		0x03
+#define REG_COM1		0x04
+#define  COM1_CCIR656		0x40
+#define REG_B_AVE		0x05
+#define REG_GB_AVE		0x06
+#define REG_GR_AVE		0x07
+#define REG_R_AVE		0x08
+#define REG_COM2		0x09
 #define REG_PID			0x0a	/* Product ID MSB */
 #define REG_VER			0x0b	/* Product ID LSB */
-#define REG_COM3		0x0c	/* Output byte swap, signals reassign */
-#define  COM3_SWAP		0x40	/* Byte swap */
+#define REG_COM3		0x0c
+#define  COM3_SWAP		0x40
 #define  COM3_VARIOPIXEL1	0x04
 #define REG_COM4		0x0d	/* Vario Pixels  */
 #define  COM4_VARIOPIXEL2	0x80
@@ -67,16 +64,16 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
 #define  CLK_EXT		0x40	/* Use external clock directly */
 #define  CLK_SCALE		0x3f	/* Mask for internal clock scale */
 #define REG_COM7		0x12	/* SCCB reset, output format */
-#define  COM7_RESET		0x80	/* Register reset */
+#define  COM7_RESET		0x80
 #define  COM7_FMT_MASK		0x38
 #define  COM7_FMT_VGA		0x40
-#define	 COM7_FMT_CIF		0x20	/* CIF format */
-#define  COM7_FMT_QVGA		0x10	/* QVGA format */
-#define  COM7_FMT_QCIF		0x08	/* QCIF format */
-#define	 COM7_RGB		0x04	/* bits 0 and 2 - RGB format */
-#define	 COM7_YUV		0x00	/* YUV */
-#define	 COM7_BAYER		0x01	/* Bayer format */
-#define	 COM7_PBAYER		0x05	/* "Processed bayer" */
+#define	 COM7_FMT_CIF		0x20
+#define  COM7_FMT_QVGA		0x10
+#define  COM7_FMT_QCIF		0x08
+#define	 COM7_RGB		0x04
+#define	 COM7_YUV		0x00
+#define	 COM7_BAYER		0x01
+#define	 COM7_PBAYER		0x05
 #define REG_COM8		0x13	/* AGC/AEC options */
 #define  COM8_FASTAEC		0x80	/* Enable fast AGC/AEC */
 #define  COM8_AECSTEP		0x40	/* Unlimited AEC step size */
@@ -183,6 +180,8 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
 #define REG_BD50ST		0xa2	/* Banding Filter Value 50Hz */
 #define REG_BD60ST		0xa3	/* Banding Filter Value 60Hz */
 
+#define OV9650_PRODUCT_ID	0x9650
+
 struct ov965x_ctrls {
 	struct v4l2_ctrl_handler handler;
 };
@@ -205,15 +204,13 @@ struct ov965x {
 	/* protects the struct members below */
 	struct mutex lock;
 
-	/* sensor matrix scan window */
-	/* struct v4l2_rect ccd_rect; */
 	u8 reg_com7;
 
 	struct ov965x_ctrls ctrls;
 
-	unsigned int streaming:1;
-	unsigned int apply_fmt:1;
-	unsigned int power;
+	unsigned short streaming;
+	unsigned short power;
+	u8 apply_fmt;
 };
 
 struct i2c_regval {
@@ -375,7 +372,7 @@ static int ov965x_read(struct i2c_client *client, u8 addr, u8 *val)
 			*val = buf;
 	}
 
-	v4l2_dbg(3, debug, client, "i2c_read: 0x%02X : 0x%02x. ret: %d\n",
+	v4l2_dbg(2, debug, client, "i2c_read: 0x%02X : 0x%02x. ret: %d\n",
 		 addr, *val, ret);
 
 	return ret == 1 ? 0 : ret;
@@ -387,7 +384,7 @@ static int ov965x_write(struct i2c_client *client, u8 addr, u8 val)
 
 	int ret = i2c_master_send(client, buf, 2);
 
-	v4l2_dbg(3, debug, client, "i2c_write: 0x%02X : 0x%02x. ret: %d\n",
+	v4l2_dbg(2, debug, client, "i2c_write: 0x%02X : 0x%02x. ret: %d\n",
 		 addr, val, ret);
 
 	return ret == 2 ? 0 : ret;
@@ -469,6 +466,29 @@ static int ov965x_enum_mbus_code(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int ov965x_enum_frame_sizes(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_fh *fh,
+				   struct v4l2_subdev_frame_size_enum *fse)
+{
+	int i = ARRAY_SIZE(ov965x_formats);
+
+	if (fse->index > ARRAY_SIZE(ov965x_framesizes))
+		return -EINVAL;
+
+	while (--i)
+		if (fse->code == ov965x_formats[i].code)
+			break;
+
+	fse->code = ov965x_formats[i].code;
+
+	fse->min_width  = ov965x_framesizes[fse->index].width;
+	fse->max_width  = fse->min_width;
+	fse->max_height = ov965x_framesizes[fse->index].height;
+	fse->min_height = fse->max_height;
+
+	return 0;
+}
+
 static int ov965x_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 			  struct v4l2_subdev_format *fmt)
 {
@@ -481,7 +501,9 @@ static int ov965x_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		return 0;
 	}
 
+	mutex_lock(&ov965x->lock);
 	fmt->format = ov965x->format;
+	mutex_unlock(&ov965x->lock);
 
 	return 0;
 }
@@ -541,6 +563,8 @@ static int ov965x_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 
 	ov965x_try_format(ov965x, &fmt->format);
 
+	mutex_lock(&ov965x->lock);
+
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
 		if (fh != NULL) {
 			mf = v4l2_subdev_get_try_format(fh, fmt->pad);
@@ -555,26 +579,14 @@ static int ov965x_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		}
 	}
 
+	mutex_unlock(&ov965x->lock);
 	return ret;
 }
 
-static int ov965x_s_stream(struct v4l2_subdev *sd, int on)
+static int __ov965x_set_params(struct ov965x *ov965x)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct ov965x *ov965x = to_ov965x(sd);
-	int ret = 0, i;
-
-	pr_info("on: %d\n", on);
-
-	if (!on) {
-		/* sleep mode  */
-		ov965x_write(client, REG_COM2, 0x11);
-		return 0; /* DEBUG */
-	}
-
-	/* if (!on || (on && ov965x->streaming)) */
-	/* 	return 0; */
-	/* pr_info("on: %d\n", on); */
+	struct i2c_client *client = v4l2_get_subdevdata(&ov965x->sd);
+	int i, ret = 0;
 
 	for (i = 0; i < ARRAY_SIZE(ov965x_init_regs) && !ret; i++) {
 		if (ov965x_init_regs[i].addr == CHIP_DELAY) {
@@ -585,23 +597,47 @@ static int ov965x_s_stream(struct v4l2_subdev *sd, int on)
 		ret = ov965x_write(client, ov965x_init_regs[i].addr,
 				   ov965x_init_regs[i].value);
 		if (ret < 0)
-			break;
+			return ret;
 	}
 	if (!ret)
 		ret = ov965x_set_gamma_curve(ov965x);
 	if (!ret)
 		ret = ov965x_set_color_matrix(ov965x);
 
-	if (ov965x->apply_fmt) {
-		ov965x_write(client, REG_COM7, ov965x->reg_com7);
-		/* Output drive, disable soft sleep mode  */
-		ov965x_write(client, REG_COM2, 0x01);
-		//ov965x->apply_fmt = 1;
+	return ret;
+}
+
+static int ov965x_s_stream(struct v4l2_subdev *sd, int on)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct ov965x *ov965x = to_ov965x(sd);
+	int ret = 0;
+
+	v4l2_dbg(2, debug, client, "%s: on: %d\n", __func__, on);
+
+	mutex_lock(&ov965x->lock);
+	if (ov965x->streaming == !on) {
+		if (on) {
+			ret = __ov965x_set_params(ov965x);
+
+			if (!ret && ov965x->apply_fmt) {
+				ret = ov965x_write(client, REG_COM7,
+						   ov965x->reg_com7);
+				/* Output drive, disable soft sleep mode  */
+				ov965x_write(client, REG_COM2, 0x01);
+				/* ov965x->apply_fmt = 1; */
+			}
+		} else {
+			/* sleep mode  */
+			ret = ov965x_write(client, REG_COM2, 0x11);
+		}
 	}
 
 	if (!ret)
-		ov965x->streaming = on;
+		ov965x->streaming += on ? 1 : -1;
 
+	WARN_ON(ov965x->streaming < 0);
+	mutex_unlock(&ov965x->lock);
 	return ret;
 }
 
@@ -622,37 +658,68 @@ static void ov965x_gpio_set(int gpio, int val)
 	}
 }
 
-static int ov965x_set_power(struct v4l2_subdev *sd, int on)
+static void __ov965x_set_power(struct ov965x *ov965x, int on)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct ov965x *ov965x = to_ov965x(sd);
-	int ret = 0;
-
-	pr_info("on: %d\n", on);
-
-	/* TODO: Add reference counting */
-
 	if (on) {
 		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 0);
 		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 0);
 		usleep_range(25000, 26000);
-		/* soft reset */
-		//ov965x_write(client, REG_COM7, 0x80);
-		/* sleep mode */
-		//msleep(50);
-		//ov965x_write(client, REG_COM2, 0x11);
 	} else {
 		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 1);
 		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 1);
-		ov965x->streaming = 0;
 	}
+
+	ov965x->streaming = 0;
+}
+
+static int ov965x_s_power(struct v4l2_subdev *sd, int on)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct ov965x *ov965x = to_ov965x(sd);
+
+	v4l2_dbg(2, debug, client, "%s: on: %d\n", __func__, on);
+
+	mutex_lock(&ov965x->lock);
+	if (ov965x->power == !on) {
+		__ov965x_set_power(ov965x, on);
+		ov965x->apply_fmt = 1;
+	}
+	ov965x->power += on ? 1 : -1;
+
+	WARN_ON(ov965x->power < 0);
+	mutex_unlock(&ov965x->lock);
+	return 0;
+}
+
+static int ov965x_registered(struct v4l2_subdev *sd)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	struct ov965x *ov965x = to_ov965x(sd);
+	u8 pid, ver;
+	int ret
+
+	mutex_lock(&ov965x->lock);
+	 __ov965x_set_power(ov965x, 1);
+       	usleep_range(25000, 26000);
+
+	/* check sensor revision */
+	ret = ov965x_read(client, REG_PID, &pid);
+	if (!ret)
+		ret = ov965x_read(client, REG_VER, &ver);
+
+	if (!ret) {
+
+	}
+
+	__ov965x_set_power(ov965x, 0);
+	mutex_unlock(&ov965x->lock);
 
 	return ret;
 }
 
 static const struct v4l2_subdev_pad_ops ov965x_pad_ops = {
 	.enum_mbus_code = ov965x_enum_mbus_code,
-	/* .enum_frame_size = ov965x_enum_frame_size, */
+	.enum_frame_size = ov965x_enum_frame_sizes,
 	.get_fmt = ov965x_get_fmt,
 	.set_fmt = ov965x_set_fmt,
 };
@@ -662,11 +729,12 @@ static const struct v4l2_subdev_video_ops ov965x_video_ops = {
 };
 
 static const struct v4l2_subdev_internal_ops ov965x_sd_internal_ops = {
+	.registered = ov965x_registered,
 	.open = ov965x_open,
 };
 
 static const struct v4l2_subdev_core_ops ov965x_core_ops = {
-	.s_power = ov965x_set_power,
+	.s_power = ov965x_s_power,
 };
 
 static const struct v4l2_subdev_ops ov965x_subdev_ops = {
@@ -719,6 +787,7 @@ static int ov965x_configure_gpios(struct ov965x *ov965x,
 		}
 		ov965x->gpios[i] = gpio;
 	}
+
 	return 0;
 error:
 	ov965x_free_gpios(ov965x);
@@ -814,6 +883,5 @@ static struct i2c_driver ov965x_i2c_driver = {
 module_i2c_driver(ov965x_i2c_driver);
 
 MODULE_AUTHOR("Sylwester Nawrocki <sylvester.nawrocki@gmail.com>");
-MODULE_DESCRIPTION("OV9650/OV9652 CMOS Image Sensors driver");
+MODULE_DESCRIPTION("OV9650/OV9652 CMOS Image Sensor driver");
 MODULE_LICENSE("GPL");
-
