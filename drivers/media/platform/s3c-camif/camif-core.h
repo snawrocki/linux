@@ -141,25 +141,16 @@ struct camif_pix_limits {
 	u16 win_hor_offset_align;
 };
 
-/*
- * Camera port pins, without CAMRESET which is unused by this
- * host driver and is intended to be controlled directly by
- * sensor subdev drivers if required.
- */
-#define CAMIF_NUM_GPIOS	12
-
 /**
  * struct s3c_camif_variant - CAMIF variant structure
  * @vp_pix_limits:    pixel limits for the codec and preview paths
  * @camif_pix_limits: pixel limits for the camera input interface
  * @ip_revision:      the CAMIF IP revision: 0x20 for s3c244x, 0x32 for s3c6410
- * @gpios:            camera port pins, without CAMRESET
  */
 struct s3c_camif_variant {
 	struct vp_pix_limits vp_pix_limits[2];
 	struct camif_pix_limits pix_limits;
 	u8 ip_revision;
-	int gpios[CAMIF_NUM_GPIOS];
 	unsigned int vp_offset;
 };
 

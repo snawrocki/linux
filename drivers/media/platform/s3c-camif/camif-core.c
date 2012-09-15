@@ -394,40 +394,6 @@ static int camif_request_irqs(struct platform_device *pdev,
 	return ret;
 }
 
-/*
- * Configure the camera port pin mux manually until proper pinctrl
- * driver is available.
- */
-static int camif_configure_port(struct camif_dev *camif)
-{
-	const int *gpios = camif->variant->gpios;
-	int i, ret;
-
-	for (i = 0; i < CAMIF_NUM_GPIOS; i++) {
-		ret = gpio_request(gpios[i], "camif");
-		if (ret == 0) {
-			ret = s3c_gpio_cfgpin(gpios[i], S3C_GPIO_SFN(2));
-		} else {
-			dev_err(camif->dev, "failed to configure GPIO %d\n", i);
-			for (--i; i >= 0; i--)
-				gpio_free(gpios[i]);
-			return ret;
-		}
-		s3c_gpio_setpull(gpios[i], S3C_GPIO_PULL_NONE);
-	}
-
-	return 0;
-}
-
-static void camif_free_port(struct camif_dev *camif)
-{
-	const int *gpios = camif->variant->gpios;
-	int i;
-
-	for (i = 0; i < CAMIF_NUM_GPIOS; i++)
-		gpio_free(gpios[i]);
-}
-
 static int s3c_camif_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -446,8 +412,10 @@ static int s3c_camif_probe(struct platform_device *pdev)
 
 	camif->dev = dev;
 
-	if (!pdata)
+	if (!pdata || !pdata->gpio_get || !pdata->gpio_put) {
+		dev_err(dev, "wrong platform data\n");
 		return -EINVAL;
+	}
 
 	camif->pdata = *pdata;
 	drvdata = (void *)platform_get_device_id(pdev)->driver_data;
@@ -465,7 +433,7 @@ static int s3c_camif_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	ret = camif_configure_port(camif);
+	ret = pdata->gpio_get();
 	if (ret < 0)
 		return ret;
 
@@ -550,13 +518,14 @@ err_pm:
 err_clk:
 	s3c_camif_unregister_subdev(camif);
 err_sd:
-	camif_free_port(camif);
+	pdata->gpio_put();
 	return ret;
 }
 
 static int __devexit s3c_camif_remove(struct platform_device *pdev)
 {
 	struct camif_dev *camif = platform_get_drvdata(pdev);
+	struct s3c_camif_plat_data *pdata = &camif->pdata;
 
 	media_device_unregister(&camif->media_dev);
 	camif_unregister_media_entities(camif);
@@ -564,7 +533,7 @@ static int __devexit s3c_camif_remove(struct platform_device *pdev)
 
 	pm_runtime_disable(&pdev->dev);
 	camif_clk_put(camif);
-	camif_free_port(camif);
+	pdata->gpio_put();
 
 	return 0;
 }
@@ -586,7 +555,7 @@ static int s3c_camif_runtime_suspend(struct device *dev)
 	clk_disable(camif->clock[CLK_GATE]);
 	return 0;
 }
-#ifdef CONFIG_ARCH_S3C24XX
+
 static const struct s3c_camif_variant s3c244x_camif_variant = {
 	.vp_pix_limits = {
 		[VP_CODEC] = {
@@ -608,21 +577,13 @@ static const struct s3c_camif_variant s3c244x_camif_variant = {
 		.win_hor_offset_align	= 8,
 	},
 	.ip_revision = S3C244X_CAMIF_IP_REV,
-	.gpios = {
-		S3C2410_GPJ(0), S3C2410_GPJ(1), S3C2410_GPJ(2),
-		S3C2410_GPJ(3), S3C2410_GPJ(4), S3C2410_GPJ(5),
-		S3C2410_GPJ(6), S3C2410_GPJ(7), S3C2410_GPJ(8),
-		S3C2410_GPJ(9), S3C2410_GPJ(10), S3C2410_GPJ(11),
-	},
 };
 
 static struct s3c_camif_drvdata s3c244x_camif_drvdata = {
 	.variant	= &s3c244x_camif_variant,
 	.bus_clk_freq	= 24000000UL,
 };
-#endif
 
-#ifdef CONFIG_ARCH_S3C64XX
 static const struct s3c_camif_variant s3c6410_camif_variant = {
 	.vp_pix_limits = {
 		[VP_CODEC] = {
@@ -644,12 +605,6 @@ static const struct s3c_camif_variant s3c6410_camif_variant = {
 		.win_hor_offset_align	= 8,
 	},
 	.ip_revision = S3C6410_CAMIF_IP_REV,
-	.gpios = {
-		S3C64XX_GPF(0), S3C64XX_GPF(1), S3C64XX_GPF(2),
-		S3C64XX_GPF(4), S3C64XX_GPF(5), S3C64XX_GPF(6),
-		S3C64XX_GPF(7), S3C64XX_GPF(8), S3C64XX_GPF(9),
-		S3C64XX_GPF(10), S3C64XX_GPF(11), S3C64XX_GPF(12),
-	},
 	.vp_offset = 0x20,
 };
 
@@ -657,22 +612,16 @@ static struct s3c_camif_drvdata s3c6410_camif_drvdata = {
 	.variant	= &s3c6410_camif_variant,
 	.bus_clk_freq	= 133000000UL,
 };
-#endif
 
 static struct platform_device_id s3c_camif_driver_ids[] = {
-#ifdef CONFIG_ARCH_S3C24XX
 	{
 		.name		= "s3c2440-camif",
 		.driver_data	= (unsigned long)&s3c244x_camif_drvdata,
-	},
-#endif
-#ifdef CONFIG_ARCH_S3C64XX
-	{
+	}, {
 		.name		= "s3c6410-camif",
 		.driver_data	= (unsigned long)&s3c6410_camif_drvdata,
 	},
-#endif
-	{ },
+	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(platform, s3c_camif_driver_ids);
 
