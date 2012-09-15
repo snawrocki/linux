@@ -3,6 +3,10 @@
  *
  * Copyright (c) 2012, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
  *
+ * Register definitions and initial settings based on a driver written
+ * by Vladimir Fonov.
+ * Copyright (c) 2010, Vladimir Fonov
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -180,7 +184,9 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
 #define REG_BD50ST		0xa2	/* Banding Filter Value 50Hz */
 #define REG_BD60ST		0xa3	/* Banding Filter Value 60Hz */
 
-#define OV9650_PRODUCT_ID	0x9650
+#define OV965X_PID_MSB		0x96
+#define OV9650_PID_LSB		0x50
+#define OV9652_PID_LSB		0x52
 
 struct ov965x_ctrls {
 	struct v4l2_ctrl_handler handler;
@@ -696,7 +702,7 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov965x *ov965x = to_ov965x(sd);
 	u8 pid, ver;
-	int ret
+	int ret;
 
 	mutex_lock(&ov965x->lock);
 	 __ov965x_set_power(ov965x, 1);
@@ -706,14 +712,16 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 	ret = ov965x_read(client, REG_PID, &pid);
 	if (!ret)
 		ret = ov965x_read(client, REG_VER, &ver);
-
 	if (!ret) {
-
+		if (pid == OV965X_PID_MSB &&
+		    (ver == OV9650_PID_LSB || ver == OV9652_PID_LSB))
+			v4l2_info(sd, "Found OV96%02X sensor\n", ver);
+		else
+			v4l2_err(sd, "Sensor detection failed\n");
 	}
-
 	__ov965x_set_power(ov965x, 0);
-	mutex_unlock(&ov965x->lock);
 
+	mutex_unlock(&ov965x->lock);
 	return ret;
 }
 
