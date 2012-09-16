@@ -523,7 +523,9 @@ static struct s3c_camif_plat_data mini2440_camif_cfg __initdata = {
 					  V4L2_MBUS_VSYNC_ACTIVE_HIGH |
 					  V4L2_MBUS_HSYNC_ACTIVE_LOW,
 		.i2c_bus_num		= 0,
-	}
+	},
+	.gpio_get = s3c_camif_gpio_get,
+	.gpio_put = s3c_camif_gpio_put,
 };
 
 static struct platform_device *mini2440_devices[] __initdata = {
