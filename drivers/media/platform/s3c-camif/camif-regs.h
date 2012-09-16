@@ -1,7 +1,9 @@
 /*
  * Register definition file for s3c244x/s3c64xx SoC CAMIF driver
  *
- * Copyright (c) 2012, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+ * Copyright (c) 2012, Samsung Electronics Co., Ltd.
+ * Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+ * Tomasz Figa <tomasz.figa@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

@@ -1,7 +1,8 @@
 /*
  * s3c24xx/s3c64xx SoC series Camera Interface (CAMIF) driver
  *
- * Copyright (c) 2012, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+ * Copyright (c) 2012, Samsung Electronics Co., Ltd.
+ * Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

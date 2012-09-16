@@ -1,7 +1,9 @@
 /*
  * s3c244x/s3c64xx SoC series Camera Interface (CAMIF) driver
  *
- * Copyright (c) 2012, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+ * Copyright (c) 2012, Samsung Electronics Co., Ltd.
+ * Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+ * Tomasz Figa <tomasz.figa@gmail.com>
  *
  * Based on drivers/media/platform/s5p-fimc,
  * Copyright (C) 2010 - 2012 Samsung Electronics Co., Ltd.
