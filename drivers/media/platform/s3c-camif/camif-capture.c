@@ -59,15 +59,16 @@ static void camif_prepare_dma_offset(struct camif_vp *vp)
 {
 	struct camif_frame *f = &vp->out_frame;
 
-	f->dma_offset.initial = f->rect.top*f->f_width + f->rect.left;
+	f->dma_offset.initial = f->rect.top * f->f_width + f->rect.left;
 	f->dma_offset.line = f->f_width - (f->rect.left + f->rect.width);
 
 	pr_debug("dma_offset: initial=%d, line=%d\n",
-				f->dma_offset.initial, f->dma_offset.line);
+		 f->dma_offset.initial, f->dma_offset.line);
 }
 
 static int s3c_camif_hw_init(struct camif_dev *camif, struct camif_vp *vp)
 {
+	unsigned int ip_rev = camif->variant->ip_revision;
 	unsigned long flags;
 
 	if (camif->sensor.sd == NULL || vp->out_fmt == NULL)
@@ -75,13 +76,13 @@ static int s3c_camif_hw_init(struct camif_dev *camif, struct camif_vp *vp)
 
 	spin_lock_irqsave(&camif->slock, flags);
 
-	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
+	if (ip_rev == S3C244X_CAMIF_IP_REV)
 		camif_hw_clear_fifo_overflow(vp);
 	camif_hw_set_camera_bus(camif);
 	camif_hw_set_source_format(camif);
 	camif_hw_set_camera_crop(camif);
 	camif_hw_set_test_pattern(camif, camif->test_pattern->val);
-	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+	if (ip_rev == S3C6410_CAMIF_IP_REV)
 		camif_hw_set_input_path(vp);
 	camif_cfg_video_path(vp);
 	vp->state &= ~ST_VP_CONFIG;
@@ -97,6 +98,7 @@ static int s3c_camif_hw_init(struct camif_dev *camif, struct camif_vp *vp)
  */
 static int s3c_camif_hw_vp_init(struct camif_dev *camif, struct camif_vp *vp)
 {
+	unsigned int ip_rev = camif->variant->ip_revision;
 	unsigned long flags;
 
 	if (vp->out_fmt == NULL)
@@ -104,10 +106,10 @@ static int s3c_camif_hw_vp_init(struct camif_dev *camif, struct camif_vp *vp)
 
 	spin_lock_irqsave(&camif->slock, flags);
 	camif_prepare_dma_offset(vp);
-	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV)
+	if (ip_rev == S3C244X_CAMIF_IP_REV)
 		camif_hw_clear_fifo_overflow(vp);
 	camif_cfg_video_path(vp);
-	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+	if (ip_rev == S3C6410_CAMIF_IP_REV)
 		camif_hw_set_effect(vp, false);
 	vp->state &= ~ST_VP_CONFIG;
 
@@ -295,17 +297,17 @@ irqreturn_t s3c_camif_irq_handler(int irq, void *priv)
 {
 	struct camif_vp *vp = priv;
 	struct camif_dev *camif = vp->camif;
+	unsigned int ip_rev = camif->variant->ip_revision;
 	unsigned int status;
 
 	spin_lock(&camif->slock);
 
-	if (camif->variant->ip_revision == S3C6410_CAMIF_IP_REV)
+	if (ip_rev == S3C6410_CAMIF_IP_REV)
 		camif_hw_clear_pending_irq(vp);
 
 	status = camif_hw_get_status(vp);
 
-	if (camif->variant->ip_revision == S3C244X_CAMIF_IP_REV
-		&& status & CISTATUS_OVF_MASK) {
+	if (ip_rev == S3C244X_CAMIF_IP_REV && (status & CISTATUS_OVF_MASK)) {
 		camif_hw_clear_fifo_overflow(vp);
 		goto unlock;
 	}
