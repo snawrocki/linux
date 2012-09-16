@@ -354,7 +354,7 @@ static int camif_clk_get(struct camif_dev *camif)
 
 	for (i = 0; i < CLK_MAX_NUM; i++) {
 		camif->clock[i] = clk_get(camif->dev, camif_clocks[i]);
-		if (!IS_ERR(camif->clock[i])) {
+		if (IS_ERR(camif->clock[i])) {
 			ret = PTR_ERR(camif->clock[i]);
 			goto err;
 		}
