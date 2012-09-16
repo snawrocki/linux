@@ -38,12 +38,10 @@
 #include "camif-core.h"
 
 static char *camif_clocks[CLK_MAX_NUM] = {
+	/* HCLK CAMIF clock */
 	[CLK_GATE]	= "camif",
-#ifdef CONFIG_ARCH_S3C24XX
-	[CLK_CAM]	= "camif-upll",
-#else
+	/* CAMIF / external camera sensor master clock */
 	[CLK_CAM]	= "camera",
-#endif
 };
 
 static const struct camif_fmt camif_formats[] = {
@@ -343,25 +341,36 @@ static void camif_clk_put(struct camif_dev *camif)
 	int i;
 
 	for (i = 0; i < CLK_MAX_NUM; i++) {
-		if (camif->clock[i])
-			clk_put(camif->clock[i]);
+		if (IS_ERR_OR_NULL(camif->clock[i]))
+			continue;
+		clk_unprepare(camif->clock[i]);
+		clk_put(camif->clock[i]);
 	}
 }
 
 static int camif_clk_get(struct camif_dev *camif)
 {
-	int i;
+	int ret, i;
 
 	for (i = 0; i < CLK_MAX_NUM; i++) {
 		camif->clock[i] = clk_get(camif->dev, camif_clocks[i]);
-		if (!IS_ERR(camif->clock[i]))
-			continue;
-		dev_err(camif->dev, "failed to get clock: %s\n",
-			camif_clocks[i]);
-		return -ENXIO;
+		if (!IS_ERR(camif->clock[i])) {
+			ret = PTR_ERR(camif->clock[i]);
+			goto err;
+		}
+		ret = clk_prepare(camif->clock[i]);
+		if (ret < 0) {
+			clk_put(camif->clock[i]);
+			camif->clock[i] = NULL;
+			goto err;
+		}
 	}
-
 	return 0;
+err:
+	camif_clk_put(camif);
+	dev_err(camif->dev, "failed to get clock: %s\n",
+		camif_clocks[i]);
+	return ret;
 }
 
 /*
@@ -545,6 +554,7 @@ static int s3c_camif_runtime_resume(struct device *dev)
 	struct camif_dev *camif = dev_get_drvdata(dev);
 
 	clk_enable(camif->clock[CLK_GATE]);
+	/* null op on s3c244x */
 	clk_enable(camif->clock[CLK_CAM]);
 	return 0;
 }
@@ -554,6 +564,7 @@ static int s3c_camif_runtime_suspend(struct device *dev)
 	struct camif_dev *camif = dev_get_drvdata(dev);
 
 	clk_disable(camif->clock[CLK_CAM]);
+	/* null op on s3c244x */
 	clk_disable(camif->clock[CLK_GATE]);
 	return 0;
 }
