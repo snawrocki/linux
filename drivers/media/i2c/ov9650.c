@@ -850,6 +850,8 @@ static int ov965x_probe(struct i2c_client *client,
 		goto err_gpio;
 
 	ov965x_get_default_format(&ov965x->format);
+	ov965x->reg_com7 = ov965x_framesizes[0].reg_com7;
+
 	return 0;
 
 err_gpio:
