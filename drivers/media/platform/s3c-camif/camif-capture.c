@@ -344,7 +344,7 @@ irqreturn_t s3c_camif_irq_handler(int irq, void *priv)
 		 */
 		index = (CISTATUS_FRAMECNT(status) + 2) & 1;
 
-		ktime_get_real_ts(&ts);
+		ktime_get_ts(&ts);
 		vbuf = camif_active_queue_peek(vp, index);
 
 		if (!WARN_ON(vbuf == NULL)) {
