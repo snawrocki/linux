@@ -21,6 +21,9 @@
 #ifndef _V4L2_DEVICE_H
 #define _V4L2_DEVICE_H
 
+#include <linux/list.h>
+#include <linux/mutex.h>
+
 #include <media/media-device.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-dev.h>
@@ -65,6 +68,9 @@ struct v4l2_device {
 	struct v4l2_prio_state prio;
 	/* BKL replacement mutex. Temporary solution only. */
 	struct mutex ioctl_lock;
+	/* Subdevice group handling */
+	struct mutex group_lock;
+	struct list_head group_head;
 	/* Keep track of the references to this struct. */
 	struct kref ref;
 	/* Release function that is called when the ref count goes to 0. */

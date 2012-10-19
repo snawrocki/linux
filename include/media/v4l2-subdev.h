@@ -622,6 +622,22 @@ struct v4l2_subdev_fh {
 #endif
 };
 
+enum v4l2_subdev_role {
+	V4L2_SUBDEV_DATA_SOURCE = 1,
+	V4L2_SUBDEV_DATA_SINK,
+	V4L2_SUBDEV_DATA_PROCESSOR,
+};
+
+/**
+ * struct v4l2_subdev_platform_data - subdev platform data
+ * @subdev:		subdevice
+ * @platform_data:	subdevice driver platform data
+ */
+struct v4l2_subdev_platform_data {
+	struct v4l2_subdev *subdev;
+	void *platform_data;
+};
+
 #define to_v4l2_subdev_fh(fh)	\
 	container_of(fh, struct v4l2_subdev_fh, vfh)
 

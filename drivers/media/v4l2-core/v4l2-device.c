@@ -40,6 +40,8 @@ int v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev)
 	mutex_init(&v4l2_dev->ioctl_lock);
 	v4l2_prio_init(&v4l2_dev->prio);
 	kref_init(&v4l2_dev->ref);
+	INIT_LIST_HEAD(&v4l2_dev->group_head);
+	mutex_init(&v4l2_dev->group_lock);
 	get_device(dev);
 	v4l2_dev->dev = dev;
 	if (dev == NULL) {
