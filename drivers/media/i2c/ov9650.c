@@ -469,8 +469,10 @@ static void ov965x_gpio_set(int gpio, int val)
 	}
 }
 
-static void __ov965x_set_power(struct ov965x *ov965x, int on)
+static int __ov965x_set_power(struct ov965x *ov965x, int on)
 {
+	int ret;
+
 	if (on) {
 		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 0);
 		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 0);
@@ -481,25 +483,29 @@ static void __ov965x_set_power(struct ov965x *ov965x, int on)
 	}
 
 	ov965x->streaming = 0;
+	return 0;
 }
 
 static int ov965x_s_power(struct v4l2_subdev *sd, int on)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov965x *ov965x = to_ov965x(sd);
+	int ret = 0;
 
 	v4l2_dbg(2, debug, client, "%s: on: %d\n", __func__, on);
 
 	mutex_lock(&ov965x->lock);
 	if (ov965x->power == !on) {
-		__ov965x_set_power(ov965x, on);
+		ret = __ov965x_set_power(ov965x, on);
 		ov965x->apply_fmt = 1;
 	}
-	ov965x->power += on ? 1 : -1;
+	if (!ret)
+		ov965x->power += on ? 1 : -1;
 
 	WARN_ON(ov965x->power < 0);
 	mutex_unlock(&ov965x->lock);
-	return 0;
+
+	return ret;
 }
 
 static void ov965x_get_default_format(struct v4l2_mbus_framefmt *mf)
@@ -832,7 +838,9 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 	int ret;
 
 	mutex_lock(&ov965x->lock);
-	 __ov965x_set_power(ov965x, 1);
+	ret =  __ov965x_set_power(ov965x, 1);
+	if (ret)
+		goto err_unlock;
        	usleep_range(25000, 26000);
 
 	/* check sensor revision */
@@ -847,7 +855,7 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 			v4l2_err(sd, "Sensor detection failed\n");
 	}
 	__ov965x_set_power(ov965x, 0);
-
+err_unlock:
 	mutex_unlock(&ov965x->lock);
 	return ret;
 }
