@@ -34,6 +34,9 @@
 
 #define V4L2_DEVICE_NAME_SIZE (20 + 16)
 
+/* Set this flag if this device requires the clock control in subdevs. */
+#define V4L2_DEVICE_FL_SD_CLOCK		(1U << 1)
+
 struct v4l2_ctrl_handler;
 
 struct v4l2_device {
@@ -51,6 +54,8 @@ struct v4l2_device {
 	spinlock_t lock;
 	/* unique device name, by default the driver name + bus ID */
 	char name[V4L2_DEVICE_NAME_SIZE];
+	/* V4L2_DEVICE_FL_* flags */
+	unsigned int flags;
 	/* notify callback called by some sub-devices. */
 	void (*notify)(struct v4l2_subdev *sd,
 			unsigned int notification, void *arg);
