@@ -77,8 +77,8 @@ static int async_notifier_cb(struct v4l2_async_group *group,
 		 */
 		dev->platform_data = &asd->sdpd;
 		mutex_unlock(&v4l2_dev->group_lock);
-		if (group->bind_cb)
-			group->bind_cb(group, asd);
+		if (group->bind)
+			group->bind(group, asd);
 		return NOTIFY_OK;
 	}
 
@@ -104,11 +104,11 @@ static int async_notifier_cb(struct v4l2_async_group *group,
 
 	mutex_unlock(&v4l2_dev->group_lock);
 
-	if (group->bound_cb)
-		group->bound_cb(group, asd);
+	if (group->bound)
+		group->bound(group, asd);
 
-	if (done && group->complete_cb)
-		group->complete_cb(group);
+	if (done && group->complete)
+		group->complete(group);
 
 	return NOTIFY_OK;
 }
@@ -150,8 +150,8 @@ int v4l2_async_group_probe(struct v4l2_async_group *group)
 	list_for_each_entry_safe(asd, tmp, &group->group, list) {
 		if (asd->sdpd.subdev) {
 			/* Simulate a BIND event */
-			if (group->bind_cb)
-				group->bind_cb(group, asd);
+			if (group->bind)
+				group->bind(group, asd);
 
 			/* Already probed, don't wait for it */
 			ret = v4l2_device_register_subdev(group->v4l2_dev,
@@ -174,8 +174,8 @@ int v4l2_async_group_probe(struct v4l2_async_group *group)
 	}
 
 	if (list_empty(&group->group)) {
-		if (group->complete_cb)
-			group->complete_cb(group);
+		if (group->complete)
+			group->complete(group);
 		return 0;
 	}
 

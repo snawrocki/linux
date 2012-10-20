@@ -76,6 +76,8 @@ struct v4l2_async_group {
 	struct v4l2_device *v4l2_dev;
 	int (*bind)(struct v4l2_async_group *group,
 		    struct v4l2_async_subdev *asd);
+	int (*bound)(struct v4l2_async_group *group,
+		    struct v4l2_async_subdev *asd);
 	int (*complete)(struct v4l2_async_group *group);
 };
 
