@@ -32,14 +32,23 @@ struct s3c_camif_sensor_info {
 	u8 use_field;
 };
 
+/**
+ * struct s3c_camif_plat_data - the driver's platform data structure
+ * @sensor: image sensor data structure (I2C client)
+ * @gpio_get: callback to claim and configure camera port pins
+ * @gpio_get: callback to release camera port pins
+ * @cfg_clkout: a callback to enable/disable clock signal on CAMCLKOUT pin
+ */
 struct s3c_camif_plat_data {
 	struct s3c_camif_sensor_info sensor;
 	int (*gpio_get)(void);
 	int (*gpio_put)(void);
+	int (*cfg_clkout)(bool enable);
 };
 
 /* Platform default helper functions */
 int s3c_camif_gpio_get(void);
 int s3c_camif_gpio_put(void);
+int s3c_camif_cfg_clkout(bool enable);
 
 #endif /* MEDIA_S3C_CAMIF_ */
