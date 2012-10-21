@@ -15,16 +15,19 @@
 #define S3C_CAMIF_NUM_GPIOS	13
 
 /* Default camera port configuration helpers. */
+static int gpio_clkout = -EINVAL;
 
 static void camif_get_gpios(int *gpio_start, int *gpio_reset)
 {
 #ifdef CONFIG_ARCH_S3C24XX
 	*gpio_start = S3C2410_GPJ(0);
 	*gpio_reset = S3C2410_GPJ(12);
+	gpio_clkout = S3C2410_GPJ(11);
 #else
 	/* s3c64xx */
 	*gpio_start = S3C64XX_GPF(0);
 	*gpio_reset = S3C64XX_GPF(3);
+	gpio_clkout = S3C64XX_GPF(0);
 #endif
 }
 
@@ -53,6 +56,9 @@ int s3c_camif_gpio_get(void)
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
 
+	/* Deactivate CAMCLKOUT pin */
+	gpio_direction_input(gpio_clkout);
+
 	return 0;
 }
 
@@ -67,4 +73,13 @@ void s3c_camif_gpio_put(void)
 		if (gpio != gpio_reset)
 			gpio_free(gpio);
 	}
+}
+
+/* Requiers a call to s3c_camif_gpio_get() */
+int s3c_camif_cfg_clkout(bool enable)
+{
+	if (!enable)
+		return gpio_direction_input(gpio_clkout);
+
+	return s3c_gpio_cfgpin(gpio_clkout, S3C_GPIO_SFN(2));
 }

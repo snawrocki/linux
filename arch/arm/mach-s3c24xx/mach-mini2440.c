@@ -526,6 +526,7 @@ static struct s3c_camif_plat_data mini2440_camif_cfg __initdata = {
 	},
 	.gpio_get = s3c_camif_gpio_get,
 	.gpio_put = s3c_camif_gpio_put,
+	.cfg_clkout = s3c_camif_cfg_clkout,
 };
 
 static struct platform_device *mini2440_devices[] __initdata = {
