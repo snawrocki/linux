@@ -24,6 +24,7 @@
 #include <linux/string.h>
 
 #include <media/media-entity.h>
+#include <media/v4l2-clk.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
@@ -210,6 +211,7 @@ enum gpio_id {
 struct ov965x {
 	struct v4l2_subdev sd;
 	struct media_pad pad;
+	struct v4l2_clk *clk;
 	struct v4l2_mbus_framefmt format;
 	enum v4l2_mbus_type bus_type;
 	int gpios[NUM_GPIOS];
@@ -474,12 +476,20 @@ static int __ov965x_set_power(struct ov965x *ov965x, int on)
 	int ret;
 
 	if (on) {
+		if (!IS_ERR(ov965x->clk)) {
+			ret = v4l2_clk_enable(ov965x->clk);
+			if (ret < 0)
+				return ret;
+			usleep_range(10000, 20000);
+		}
 		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 0);
 		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 0);
 		usleep_range(25000, 26000);
 	} else {
 		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 1);
 		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 1);
+		if (!IS_ERR(ov965x->clk))
+			v4l2_clk_disable(ov965x->clk);
 	}
 
 	ov965x->streaming = 0;
@@ -834,8 +844,17 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov965x *ov965x = to_ov965x(sd);
+	struct v4l2_clk *clk;
 	u8 pid, ver;
 	int ret;
+
+	if (sd->v4l2_dev->flags & V4L2_DEVICE_FL_SD_CLOCK) {
+		clk = v4l2_clk_get(sd, NULL);
+		if (!IS_ERR(clk))
+			ov965x->clk = clk;
+		else
+			v4l2_warn(sd, "Clock get failed\n");
+	}
 
 	mutex_lock(&ov965x->lock);
 	ret =  __ov965x_set_power(ov965x, 1);
@@ -860,6 +879,14 @@ err_unlock:
 	return ret;
 }
 
+static void ov965x_unregistered(struct v4l2_subdev *sd)
+{
+	struct ov965x *ov965x = to_ov965x(sd);
+	/* Currently there is no way this could be called due
+	  to circular dependencies */
+	v4l2_clk_put(ov965x->clk);
+}
+
 static const struct v4l2_subdev_pad_ops ov965x_pad_ops = {
 	.enum_mbus_code = ov965x_enum_mbus_code,
 	.enum_frame_size = ov965x_enum_frame_sizes,
@@ -873,6 +900,7 @@ static const struct v4l2_subdev_video_ops ov965x_video_ops = {
 
 static const struct v4l2_subdev_internal_ops ov965x_sd_internal_ops = {
 	.registered = ov965x_registered,
+	.unregistered = ov965x_unregistered,
 	.open = ov965x_open,
 };
 
@@ -956,6 +984,7 @@ static int ov965x_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	mutex_init(&ov965x->lock);
+	ov965x->clk = ERR_PTR(-EINVAL);
 
 	ov965x->mclk_frequency = pdata->mclk_frequency;
 
