@@ -21,6 +21,7 @@
 #include <linux/videodev2.h>
 
 #include <media/media-entity.h>
+#include <media/v4l2-clk.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-dev.h>
 #include <media/v4l2-device.h>
@@ -297,6 +298,7 @@ struct camif_dev {
 	struct device			*dev;
 	struct s3c_camif_plat_data	pdata;
 	struct clk			*clock[CLK_MAX_NUM];
+	struct v4l2_clk			*v4l2_clk;
 	struct mutex			lock;
 	spinlock_t			slock;
 	void __iomem			*io_base;

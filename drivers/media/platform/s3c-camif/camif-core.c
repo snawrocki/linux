@@ -29,6 +29,7 @@
 #include <linux/types.h>
 
 #include <media/media-device.h>
+#include <media/v4l2-clk.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-ioctl.h>
 #include <media/videobuf2-core.h>
@@ -373,6 +374,68 @@ err:
 }
 
 /*
+ * Subdev clock ops
+ */
+
+/*
+ * S3C244X doesn't support separate control of the camera master clock.
+ * This clock is being enabled/disabled together with the main CAMIF's
+ * clock, at video node open()/close(), through pm_runtime calls.
+ */
+
+static int cam_clk_enable(struct v4l2_clk *clk)
+{
+	struct camif_dev *camif = clk->priv;
+
+	/* null op on s3c244x */
+	int ret = clk_enable(camif->clock[CLK_CAM]);
+	if (ret)
+		return ret;
+	/*
+	 * Enable the clock output pin. This needs to replaced
+	 * with proper pinctrl API when such is available.
+	 */
+	if (camif->pdata.cfg_clkout)
+		ret = camif->pdata.cfg_clkout(true);
+	return ret;
+}
+
+static void cam_clk_disable(struct v4l2_clk *clk)
+{
+	struct camif_dev *camif = clk->priv;
+
+	/* null op on s3c244x */
+	clk_disable(camif->clock[CLK_CAM]);
+	/*
+	 * Tri-state the clock output pin (set to input without
+	 * pull-up/down. This needs to replaced  with proper
+	 * pinctrl API when such is available.
+	 */
+	if (camif->pdata.cfg_clkout)
+		camif->pdata.cfg_clkout(false);
+}
+
+static unsigned long cam_clk_get_rate(struct v4l2_clk *clk)
+{
+	struct camif_dev *camif = clk->priv;
+	return clk_get_rate(camif->clock[CLK_CAM]);
+}
+
+static int cam_clk_set_rate(struct v4l2_clk *clk, unsigned long rate)
+{
+	struct camif_dev *camif = clk->priv;
+	return clk_set_rate(camif->clock[CLK_CAM], rate);
+}
+
+static const struct v4l2_clk_ops camif_clk_ops = {
+	.enable		= cam_clk_enable,
+	.disable	= cam_clk_disable,
+	.get_rate	= cam_clk_get_rate,
+	.set_rate	= cam_clk_set_rate,
+	.owner		= THIS_MODULE,
+};
+
+/*
  * The CAMIF device has two relatively independent data processing paths
  * that can source data from memory or the common camera input frontend.
  * Register interrupts for each data processing path (camif_vp).
@@ -430,9 +493,9 @@ static int s3c_camif_probe(struct platform_device *pdev)
 	camif->pdata = *pdata;
 	drvdata = (void *)platform_get_device_id(pdev)->driver_data;
 	camif->variant = drvdata->variant;
+	camif->v4l2_dev.flags |= V4L2_DEVICE_FL_SD_CLOCK;
 
 	mres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
 	camif->io_base = devm_request_and_ioremap(dev, mres);
 	if (!camif->io_base) {
 		dev_err(dev, "failed to obtain I/O memory\n");
@@ -485,6 +548,12 @@ static int s3c_camif_probe(struct platform_device *pdev)
 	if (ret < 0)
 		goto err_mdev;
 
+	camif->v4l2_clk = v4l2_clk_register(&camif_clk_ops,
+					pdata->sensor.i2c_board_info.type,
+					NULL, camif);
+	if (IS_ERR(camif->v4l2_clk))
+		goto err_v4l2_clk;
+
 	ret = camif_register_sensor(camif);
 	if (ret < 0)
 		goto err_sens;
@@ -514,6 +583,8 @@ static int s3c_camif_probe(struct platform_device *pdev)
 err_unlock:
 	mutex_unlock(&camif->media_dev.graph_mutex);
 err_sens:
+	v4l2_clk_unregister(camif->v4l2_clk);
+err_v4l2_clk:
 	v4l2_device_unregister(&camif->v4l2_dev);
 	media_device_unregister(&camif->media_dev);
 	camif_unregister_media_entities(camif);
@@ -539,7 +610,8 @@ static int __devexit s3c_camif_remove(struct platform_device *pdev)
 	media_device_unregister(&camif->media_dev);
 	camif_unregister_media_entities(camif);
 	v4l2_device_unregister(&camif->v4l2_dev);
-
+	if (!IS_ERR(camif->v4l2_clk))
+		v4l2_clk_unregister(camif->v4l2_clk);
 	pm_runtime_disable(&pdev->dev);
 	camif_clk_put(camif);
 	pdata->gpio_put();
@@ -552,17 +624,12 @@ static int s3c_camif_runtime_resume(struct device *dev)
 	struct camif_dev *camif = dev_get_drvdata(dev);
 
 	clk_enable(camif->clock[CLK_GATE]);
-	/* null op on s3c244x */
-	clk_enable(camif->clock[CLK_CAM]);
 	return 0;
 }
 
 static int s3c_camif_runtime_suspend(struct device *dev)
 {
 	struct camif_dev *camif = dev_get_drvdata(dev);
-
-	/* null op on s3c244x */
-	clk_disable(camif->clock[CLK_CAM]);
 
 	clk_disable(camif->clock[CLK_GATE]);
 	return 0;
