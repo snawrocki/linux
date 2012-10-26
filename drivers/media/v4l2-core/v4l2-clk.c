@@ -28,7 +28,7 @@ static struct v4l2_clk *__find_clk(const char *dev_id, const char *id)
 		if (!strstr(dev_id, tclk->dev_id))
 			continue;
 
-		if (!id || (id && strcmp(tclk->id, id))) {
+		if (!id || (id && !strcmp(tclk->id, id))) {
 			clk = tclk;
 			break;
 		}
