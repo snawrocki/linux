@@ -586,6 +586,8 @@ struct v4l2_subdev {
 #endif
 	/* List head for use with struct v4l2_device. */
 	struct list_head dev_list;
+	/* The v4l2 core subdevs list head. */
+	struct list_head core_list;
 	struct module *owner;
 	u32 flags;
 	struct v4l2_device *v4l2_dev;

@@ -460,6 +460,7 @@ EXPORT_SYMBOL_GPL(v4l2_subdev_link_validate);
 void v4l2_subdev_init(struct v4l2_subdev *sd, const struct v4l2_subdev_ops *ops)
 {
 	INIT_LIST_HEAD(&sd->dev_list);
+	INIT_LIST_HEAD(&sd->core_list);
 	BUG_ON(!ops);
 	sd->ops = ops;
 	sd->v4l2_dev = NULL;

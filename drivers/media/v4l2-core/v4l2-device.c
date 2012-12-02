@@ -280,3 +280,101 @@ void v4l2_device_unregister_subdev(struct v4l2_subdev *sd)
 	module_put(sd->owner);
 }
 EXPORT_SYMBOL_GPL(v4l2_device_unregister_subdev);
+
+static LIST_HEAD(subdevs_list);
+static LIST_HEAD(notify_list);
+static DEFINE_MUTEX(async_mutex);
+
+#define V4L2_NOTIFY_REGISTERED_SUBDEV	_IOW('r', 0, u32)
+#define V4L2_NOTIFY_UNREGISTER_SUBDEV	_IOW('r', 1, u32)
+
+static struct v4l2_subdev *__find_subdev(struct v4l2_subdev *sd)
+{
+	struct v4l2_subdev *tmp;
+
+	list_for_each_entry(tmp, &subdevs_list, core_list) {
+		if (sd == tmp)
+			return sd;
+	}
+	return NULL;
+}
+
+int v4l2_register_subdev(struct v4l2_subdev *sd)
+{
+	struct v4l2_device *dev;
+	int ret = 0;
+
+	mutex_lock(&async_mutex);
+
+	if (__find_subdev(sd) == NULL) {
+		list_add_tail(&sd->core_list, &subdevs_list);
+		/*
+		 * Announce this subdev to v4l2_device instances
+		 * that registered for the notification.
+		 */
+		list_for_each_entry(dev, &notify_list, list) {
+			if (!dev->notify)
+				continue;
+			dev->notify(sd, V4L2_NOTIFY_REGISTERED_SUBDEV, dev);
+			/*
+			 * TODO: Change the notify callback signature and
+			 * check return value here to see if we can stop
+			 * the iteration earlier ?
+			 */
+		}
+	} else {
+		ret = -EEXIST;
+	}
+
+	mutex_unlock(&async_mutex);
+	return ret;
+}
+
+int v4l2_unregister_subdev(struct v4l2_subdev *sd)
+{
+	struct v4l2_device *dev;
+	int ret = -ENODEV;
+
+	mutex_lock(&async_mutex);
+	if (__find_subdev(sd)) {
+		/* Announce the subdev is about to be unregistered. */
+		list_for_each_entry(dev, &notify_list, list) {
+			if (!dev->notify)
+				continue;
+			dev->notify(sd, V4L2_NOTIFY_UNREGISTER_SUBDEV, dev);
+		}
+		list_del(&sd->core_list);
+		ret = 0;
+	}
+	mutex_unlock(&async_mutex);
+	return ret;
+}
+
+int v4l2_device_notify_register(struct v4l2_device *dev)
+{
+	mutex_lock(&async_mutex);
+
+
+
+	mutex_unlock(&async_mutex);
+
+	return 0;
+}
+
+int v4l2_device_notify_unregister(struct v4l2_device *dev)
+{
+	mutex_lock(&async_mutex);
+	mutex_unlock(&async_mutex);
+
+	return 0;
+}
+
+struct v4l2_subdev *v4l2_get_subdev(char *name)
+{
+	return NULL;
+}
+
+int v4l2_put_subdev(struct v4l2_subdev *sd)
+{
+	return 0;
+}

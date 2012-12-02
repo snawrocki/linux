@@ -52,6 +52,8 @@ struct v4l2_device {
 #endif
 	/* used to keep track of the registered subdevs */
 	struct list_head subdevs;
+	/* for internal use in the v4l2 core only */
+	struct list_head list;
 	/* lock this struct; can be used by the driver as well if this
 	   struct is embedded into a larger struct. */
 	spinlock_t lock;
@@ -200,5 +202,34 @@ v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev);
 			!(grpid) || __sd->grp_id == (grpid), o, f ,	\
 			##args);					\
 })
+
+/*
+ * The folowing are V4L2 core helper functions for keeping track of V4L2 subdev
+ * instances and are itended to ease the V4L2 device and V4L2 subdev driver
+ * (asynchronous) instantiation and registration.
+ */
+
+/*
+ * Register subdev to the V4L2 core.
+ */
+int v4l2_register_subdev(struct v4l2_subdev *sd);
+
+/*
+ * Unregister subdev from the V4L2 core.
+ */
+int v4l2_unregister_subdev(struct v4l2_subdev *sd);
+
+
+int v4l2_device_notify_register(struct v4l2_device *dev);
+
+/*
+ * Get a subdev registered to the V4L2 core.
+ */
+struct v4l2_subdev *v4l2_get_subdev(char *name);
+
+/*
+ * Drop reference to a subdev claimed with v4l2_get_subdev().
+ */
+int v4l2_put_subdev(struct v4l2_subdev *sd);
 
 #endif
