@@ -467,6 +467,32 @@ static int camif_request_irqs(struct platform_device *pdev,
 	return ret;
 }
 
+static int camif_probe_complete(struct camif_dev *camif)
+{
+	struct v4l2_subdev *sd;
+	int ret;
+
+	ret = v4l2_device_register_subdev_nodes(&camif->v4l2_dev);
+	if (ret < 0)
+		return ret;
+
+	ret = camif_register_video_nodes(camif);
+	if (ret < 0)
+		goto unreg_sd;
+
+	ret = camif_create_media_links(camif);
+	if (!ret)
+		return ret;
+
+	camif_unregister_video_nodes(camif);
+unreg_sd:
+	list_for_each_entry(sd, &camif->v4l2_dev.subdevs, dev_list) {
+		if (sd->devnode)
+			video_unregister_device(sd->devnode);
+	}
+	return ret;
+}
+
 static int s3c_camif_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -554,34 +580,32 @@ static int s3c_camif_probe(struct platform_device *pdev)
 	if (IS_ERR(camif->v4l2_clk))
 		goto err_v4l2_clk;
 
-	ret = camif_register_sensor(camif);
-	if (ret < 0)
-		goto err_sens;
-
 	ret = v4l2_device_register_subdev(&camif->v4l2_dev, &camif->subdev);
 	if (ret < 0)
 		goto err_sens;
 
+	ret = camif_register_sensor(camif);
+	if (ret < 0) {
+		/*
+		 * If the sensor subdev is not ready complete
+		 * initilization in the v4l2 notifier callback.
+		 */
+		if (ret == -EPROBE_DEFER)
+			return 0;
+		else
+			goto err_sens;
+	}
+
 	mutex_lock(&camif->media_dev.graph_mutex);
-
-	ret = v4l2_device_register_subdev_nodes(&camif->v4l2_dev);
-	if (ret < 0)
-		goto err_unlock;
-
-	ret = camif_register_video_nodes(camif);
-	if (ret < 0)
-		goto err_unlock;
-
-	ret = camif_create_media_links(camif);
-	if (ret < 0)
-		goto err_unlock;
-
+	ret = camif_probe_complete(camif);
 	mutex_unlock(&camif->media_dev.graph_mutex);
+
+	if (ret < 0)
+		goto err_sens;
+
 	pm_runtime_put(dev);
 	return 0;
 
-err_unlock:
-	mutex_unlock(&camif->media_dev.graph_mutex);
 err_sens:
 	v4l2_clk_unregister(camif->v4l2_clk);
 err_v4l2_clk:
