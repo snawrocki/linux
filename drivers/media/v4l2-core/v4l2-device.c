@@ -355,20 +355,35 @@ int v4l2_unregister_subdev(struct v4l2_subdev *sd)
 
 int v4l2_device_notify_register(struct v4l2_device *dev)
 {
+	struct v4l2_subdev *sd;
+	int ret;
+
+	if (!dev->notify) {
+		v4l2_err(dev, "%s null notify() callback\n", __func__);
+		return -EINVAL;
+	}
+
 	mutex_lock(&async_mutex);
-
-
-
+	if (1 /* TODO */) {
+		list_add_tail(&dev->list, &notify_list);
+		/*
+		 * Notify about already registered subdevs
+		 */
+		list_for_each_entry(sd, &subdevs_list, core_list)
+			dev->notify(sd, V4L2_NOTIFY_REGISTERED_SUBDEV, dev);
+	} else {
+		ret = -EEXIST;
+	}
 	mutex_unlock(&async_mutex);
-
 	return 0;
 }
 
 int v4l2_device_notify_unregister(struct v4l2_device *dev)
 {
 	mutex_lock(&async_mutex);
-	mutex_unlock(&async_mutex);
+	/* TODO:*/
 
+	mutex_unlock(&async_mutex);
 	return 0;
 }
 
