@@ -471,48 +471,58 @@ static void ov965x_gpio_set(int gpio, int val)
 	}
 }
 
-static int __ov965x_set_power(struct ov965x *ov965x, int on)
+static int __ov965x_power_up(struct ov965x *ov965x)
 {
-	int ret;
-
-	if (on) {
-		if (!IS_ERR(ov965x->clk)) {
-			ret = v4l2_clk_enable(ov965x->clk);
-			if (ret < 0)
-				return ret;
-			usleep_range(10000, 20000);
-		}
-		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 0);
-		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 0);
-		usleep_range(25000, 26000);
-	} else {
-		ov965x_gpio_set(ov965x->gpios[GPIO_RST], 1);
-		ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 1);
-		if (!IS_ERR(ov965x->clk))
-			v4l2_clk_disable(ov965x->clk);
+	if (!IS_ERR(ov965x->clk)) {
+		int ret = v4l2_clk_enable(ov965x->clk);
+		if (ret < 0)
+			return ret;
+		usleep_range(10000, 20000);
 	}
 
-	ov965x->streaming = 0;
+	ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 0);
+	ov965x_gpio_set(ov965x->gpios[GPIO_RST], 0);
+	usleep_range(25000, 26000);
 	return 0;
+}
+
+static void __ov965x_power_down(struct ov965x *ov965x)
+{
+	ov965x_gpio_set(ov965x->gpios[GPIO_RST], 1);
+	ov965x_gpio_set(ov965x->gpios[GPIO_PWDN], 1);
+	if (!IS_ERR(ov965x->clk))
+		v4l2_clk_disable(ov965x->clk);
+}
+
+static int __ov965x_set_power(struct ov965x *ov965x, int on)
+{
+	int ret = 0;
+
+	if (ov965x->power == !on) {
+		if (on)
+			ret = __ov965x_power_up(ov965x);
+		else
+			__ov965x_power_down(ov965x);
+
+		ov965x->apply_fmt = 1;
+		ov965x->streaming = 0;
+	}
+
+	ov965x->power += on ? 1 : -1;
+	WARN_ON(ov965x->power < 0);
+	return ret;
 }
 
 static int ov965x_s_power(struct v4l2_subdev *sd, int on)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct ov965x *ov965x = to_ov965x(sd);
-	int ret = 0;
+	int ret;
 
 	v4l2_dbg(2, debug, client, "%s: on: %d\n", __func__, on);
 
 	mutex_lock(&ov965x->lock);
-	if (ov965x->power == !on) {
-		ret = __ov965x_set_power(ov965x, on);
-		ov965x->apply_fmt = 1;
-	}
-	if (!ret)
-		ov965x->power += on ? 1 : -1;
-
-	WARN_ON(ov965x->power < 0);
+	ret = __ov965x_set_power(ov965x, on);
 	mutex_unlock(&ov965x->lock);
 
 	return ret;
@@ -840,26 +850,13 @@ static int ov965x_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 
-static int ov965x_registered(struct v4l2_subdev *sd)
+static int __ov965x_detect_device(struct ov965x *ov965x)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct ov965x *ov965x = to_ov965x(sd);
-	struct v4l2_clk *clk;
+	struct i2c_client *client = v4l2_get_subdevdata(&ov965x->sd);
 	u8 pid, ver;
 	int ret;
 
-	if (sd->v4l2_dev->flags & V4L2_DEVICE_FL_SD_CLOCK) {
-		clk = v4l2_clk_get(sd, NULL);
-		if (!IS_ERR(clk))
-			ov965x->clk = clk;
-		else
-			v4l2_warn(sd, "Clock get failed\n");
-	}
-
-	mutex_lock(&ov965x->lock);
-	ret =  __ov965x_set_power(ov965x, 1);
-	if (ret)
-		goto err_unlock;
+	 __ov965x_set_power(ov965x, 1);
        	usleep_range(25000, 26000);
 
 	/* check sensor revision */
@@ -868,23 +865,42 @@ static int ov965x_registered(struct v4l2_subdev *sd)
 		ret = ov965x_read(client, REG_VER, &ver);
 	if (!ret) {
 		if (pid == OV965X_PID_MSB &&
-		    (ver == OV9650_PID_LSB || ver == OV9652_PID_LSB))
-			v4l2_info(sd, "Found OV96%02X sensor\n", ver);
-		else
-			v4l2_err(sd, "Sensor detection failed\n");
+		    (ver == OV9650_PID_LSB || ver == OV9652_PID_LSB)){
+			v4l2_info(&ov965x->sd, "Found OV96%02X sensor\n", ver);
+		} else {
+			v4l2_err(&ov965x->sd, "Sensor detection failed\n");
+			ret = -ENODEV;
+		}
 	}
 	__ov965x_set_power(ov965x, 0);
-err_unlock:
-	mutex_unlock(&ov965x->lock);
+
 	return ret;
+}
+
+static int ov965x_registered(struct v4l2_subdev *sd)
+{
+	struct ov965x *ov965x = to_ov965x(sd);
+
+	v4l2_dbg(1, debug, sd, "%s\n", __func__);
+
+	mutex_lock(&ov965x->lock);
+	if (!IS_ERR(ov965x->clk))
+		v4l2_clk_put(ov965x->clk);
+	mutex_unlock(&ov965x->lock);
+	return 0;
 }
 
 static void ov965x_unregistered(struct v4l2_subdev *sd)
 {
 	struct ov965x *ov965x = to_ov965x(sd);
-	/* Currently there is no way this could be called due
-	  to circular dependencies */
-	v4l2_clk_put(ov965x->clk);
+
+	v4l2_dbg(1, debug, sd, "%s\n", __func__);
+
+	mutex_lock(&ov965x->lock);
+	if (ov965x->power)
+		__ov965x_power_down(ov965x);
+	ov965x->clk = ERR_PTR(-EINVAL);
+	mutex_unlock(&ov965x->lock);
 }
 
 static const struct v4l2_subdev_pad_ops ov965x_pad_ops = {
@@ -984,26 +1000,34 @@ static int ov965x_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	mutex_init(&ov965x->lock);
-	ov965x->clk = ERR_PTR(-EINVAL);
-
 	ov965x->mclk_frequency = pdata->mclk_frequency;
+	ov965x->clk = ERR_PTR(-EINVAL);
 
 	sd = &ov965x->sd;
 	v4l2_i2c_subdev_init(sd, client, &ov965x_subdev_ops);
 	strlcpy(sd->name, DRIVER_NAME, sizeof(sd->name));
-
 	sd->internal_ops = &ov965x_sd_internal_ops;
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	ov965x->clk = v4l2_clk_get(sd, NULL);
+	if (IS_ERR(ov965x->clk)) {
+		v4l2_info(sd, "Clock get failed\n");
+		return -EPROBE_DEFER;
+	}
 
 	ov965x->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sd->entity.type = MEDIA_ENT_T_V4L2_SUBDEV_SENSOR;
 	ret = media_entity_init(&sd->entity, 1, &ov965x->pad, 0);
 	if (ret < 0)
-		return ret;
+		goto err_clk;
 
 	ret = ov965x_configure_gpios(ov965x, pdata);
 	if (ret)
 		goto err_me;
+
+	ret = __ov965x_detect_device(ov965x);
+	if (ret < 0)
+		goto err_gpio;
 
 	ret = ov965x_initialize_ctrls(ov965x);
 	if (ret)
@@ -1018,6 +1042,8 @@ err_gpio:
 	ov965x_free_gpios(ov965x);
 err_me:
 	media_entity_cleanup(&sd->entity);
+err_clk:
+	v4l2_clk_put(ov965x->clk);
 	return ret;
 }
 
