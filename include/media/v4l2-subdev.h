@@ -576,14 +576,16 @@ struct v4l2_subdev_internal_ops {
 /* Set this flag if this subdev generates events. */
 #define V4L2_SUBDEV_FL_HAS_EVENTS		(1U << 3)
 
-/* Each instance of a subdev driver should create this struct, either
-   stand-alone or embedded in a larger struct.
+/*
+ * Each instance of a subdev driver should create this struct,
+ * either stand-alone or embedded in a larger struct.
  */
 struct v4l2_subdev {
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	struct media_entity entity;
 #endif
-	struct list_head list;
+	/* List head for use with struct v4l2_device. */
+	struct list_head dev_list;
 	struct module *owner;
 	u32 flags;
 	struct v4l2_device *v4l2_dev;

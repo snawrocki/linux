@@ -112,7 +112,7 @@ void v4l2_device_unregister(struct v4l2_device *v4l2_dev)
 	v4l2_device_disconnect(v4l2_dev);
 
 	/* Unregister subdevs */
-	list_for_each_entry_safe(sd, next, &v4l2_dev->subdevs, list) {
+	list_for_each_entry_safe(sd, next, &v4l2_dev->subdevs, dev_list) {
 		v4l2_device_unregister_subdev(sd);
 #if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
 		if (sd->flags & V4L2_SUBDEV_FL_IS_I2C) {
@@ -190,7 +190,7 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
 #endif
 
 	spin_lock(&v4l2_dev->lock);
-	list_add_tail(&sd->list, &v4l2_dev->subdevs);
+	list_add_tail(&sd->dev_list, &v4l2_dev->subdevs);
 	spin_unlock(&v4l2_dev->lock);
 
 	return 0;
@@ -213,7 +213,7 @@ int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
 	/* Register a device node for every subdev marked with the
 	 * V4L2_SUBDEV_FL_HAS_DEVNODE flag.
 	 */
-	list_for_each_entry(sd, &v4l2_dev->subdevs, list) {
+	list_for_each_entry(sd, &v4l2_dev->subdevs, dev_list) {
 		if (!(sd->flags & V4L2_SUBDEV_FL_HAS_DEVNODE))
 			continue;
 
@@ -244,7 +244,7 @@ int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
 	return 0;
 
 clean_up:
-	list_for_each_entry(sd, &v4l2_dev->subdevs, list) {
+	list_for_each_entry(sd, &v4l2_dev->subdevs, dev_list) {
 		if (!sd->devnode)
 			break;
 		video_unregister_device(sd->devnode);
@@ -265,7 +265,7 @@ void v4l2_device_unregister_subdev(struct v4l2_subdev *sd)
 	v4l2_dev = sd->v4l2_dev;
 
 	spin_lock(&v4l2_dev->lock);
-	list_del(&sd->list);
+	list_del(&sd->dev_list);
 	spin_unlock(&v4l2_dev->lock);
 
 	if (sd->internal_ops && sd->internal_ops->unregistered)
