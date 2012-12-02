@@ -333,21 +333,24 @@ int v4l2_register_subdev(struct v4l2_subdev *sd)
 int v4l2_unregister_subdev(struct v4l2_subdev *sd)
 {
 	struct v4l2_device *dev;
-	int ret = -ENODEV;
 
 	mutex_lock(&async_mutex);
-	if (__find_subdev(sd)) {
-		/* Announce the subdev is about to be unregistered. */
-		list_for_each_entry(dev, &notify_list, list) {
-			if (!dev->notify)
-				continue;
-			dev->notify(sd, V4L2_NOTIFY_UNREGISTER_SUBDEV, dev);
-		}
-		list_del(&sd->core_list);
-		ret = 0;
+	if (__find_subdev(sd) == NULL) {
+		mutex_unlock(&async_mutex);
+		return -ENODEV;
 	}
+
+	/* Announce the subdev is about to be unregistered. */
+	list_for_each_entry(dev, &notify_list, list) {
+		if (!dev->notify)
+			continue;
+		dev->notify(sd, V4L2_NOTIFY_UNREGISTER_SUBDEV, dev);
+	}
+
+	list_del(&sd->core_list);
 	mutex_unlock(&async_mutex);
-	return ret;
+
+	return 0;
 }
 
 int v4l2_device_notify_register(struct v4l2_device *dev)
