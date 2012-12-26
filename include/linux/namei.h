@@ -4,6 +4,7 @@
 #include <linux/dcache.h>
 #include <linux/linkage.h>
 #include <linux/path.h>
+#include <uapi/asm-generic/errno.h>
 
 struct vfsmount;
 
