@@ -550,6 +550,20 @@ void v4l_bound_align_image(u32 *w, unsigned int wmin, unsigned int wmax,
 }
 EXPORT_SYMBOL_GPL(v4l_bound_align_image);
 
+/* Return 1 if rectangle a is enclosed by rectangle b, or 0 otherwise. */
+int v4l_enclosed_rectangle(struct v4l2_rect *a, struct v4l2_rect *b)
+{
+	if (a->left < b->left || a->top < b->top)
+		return 0;
+	if (a->left + a->width > b->left + b->width)
+		return 0;
+	if (a->top + a->height > b->top + b->height)
+		return 0;
+
+	return 1;
+}
+EXPORT_SYMBOL_GPL(v4l_enclosed_rectangle);
+
 /**
  * v4l_fill_dv_preset_info - fill description of a digital video preset
  * @preset - preset value
