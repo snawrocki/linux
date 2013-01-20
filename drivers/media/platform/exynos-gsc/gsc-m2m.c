@@ -424,21 +424,6 @@ static int gsc_m2m_streamoff(struct file *file, void *fh,
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
 
-/* Return 1 if rectangle a is enclosed in rectangle b, or 0 otherwise. */
-static int is_rectangle_enclosed(struct v4l2_rect *a, struct v4l2_rect *b)
-{
-	if (a->left < b->left || a->top < b->top)
-		return 0;
-
-	if (a->left + a->width > b->left + b->width)
-		return 0;
-
-	if (a->top + a->height > b->top + b->height)
-		return 0;
-
-	return 1;
-}
-
 static int gsc_m2m_g_selection(struct file *file, void *fh,
 			struct v4l2_selection *s)
 {
@@ -497,11 +482,11 @@ static int gsc_m2m_s_selection(struct file *file, void *fh,
 		return ret;
 
 	if (s->flags & V4L2_SEL_FLAG_LE &&
-	    !is_rectangle_enclosed(&cr.c, &s->r))
+	    !v4l_enclosed_rectangle(&cr.c, &s->r))
 		return -ERANGE;
 
 	if (s->flags & V4L2_SEL_FLAG_GE &&
-	    !is_rectangle_enclosed(&s->r, &cr.c))
+	    !v4l_enclosed_rectangle(&s->r, &cr.c))
 		return -ERANGE;
 
 	s->r = cr.c;
