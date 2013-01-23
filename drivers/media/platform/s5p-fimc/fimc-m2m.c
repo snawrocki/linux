@@ -172,6 +172,27 @@ static void fimc_job_abort(void *priv)
 	fimc_m2m_shutdown(priv);
 }
 
+static struct fimc_frame *ctx_get_frame(struct fimc_ctx *ctx,
+					enum v4l2_buf_type type)
+{
+	struct fimc_frame *frame;
+
+	if (V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE == type) {
+		if (fimc_ctx_state_is_set(FIMC_CTX_M2M, ctx))
+			frame = &ctx->s_frame;
+		else
+			return ERR_PTR(-EINVAL);
+	} else if (V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE == type) {
+		frame = &ctx->d_frame;
+	} else {
+		v4l2_err(ctx->fimc_dev->v4l2_dev,
+			"Wrong buffer/video queue type (%d)\n", type);
+		return ERR_PTR(-EINVAL);
+	}
+
+	return frame;
+}
+
 static int fimc_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
 			    unsigned int *num_buffers, unsigned int *num_planes,
 			    unsigned int sizes[], void *allocators[])
@@ -463,130 +484,149 @@ static int fimc_m2m_streamoff(struct file *file, void *fh,
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
 
-static int fimc_m2m_cropcap(struct file *file, void *fh,
-			    struct v4l2_cropcap *cr)
-{
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-	struct fimc_frame *frame;
-
-	frame = ctx_get_frame(ctx, cr->type);
-	if (IS_ERR(frame))
-		return PTR_ERR(frame);
-
-	cr->bounds.left = 0;
-	cr->bounds.top = 0;
-	cr->bounds.width = frame->o_width;
-	cr->bounds.height = frame->o_height;
-	cr->defrect = cr->bounds;
-
-	return 0;
-}
-
-static int fimc_m2m_g_crop(struct file *file, void *fh, struct v4l2_crop *cr)
-{
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-	struct fimc_frame *frame;
-
-	frame = ctx_get_frame(ctx, cr->type);
-	if (IS_ERR(frame))
-		return PTR_ERR(frame);
-
-	cr->c.left = frame->offs_h;
-	cr->c.top = frame->offs_v;
-	cr->c.width = frame->width;
-	cr->c.height = frame->height;
-
-	return 0;
-}
-
-static int fimc_m2m_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
+static int fimc_m2m_try_selection(struct fimc_ctx *ctx, struct fimc_frame *frame,
+				  struct v4l2_selection *sel)
 {
 	struct fimc_dev *fimc = ctx->fimc_dev;
-	struct fimc_frame *f;
+	struct v4l2_rect *rect = &sel->r;
 	u32 min_size, halign, depth = 0;
 	int i;
 
-	if (cr->c.top < 0 || cr->c.left < 0) {
-		v4l2_err(&fimc->m2m.vfd,
-			"doesn't support negative values for top & left\n");
-		return -EINVAL;
-	}
-	if (cr->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
-		f = &ctx->d_frame;
-	else if (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
-		f = &ctx->s_frame;
+	if (sel->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
+		min_size = fimc->variant->min_inp_pixsize;
 	else
-		return -EINVAL;
-
-	min_size = (f == &ctx->s_frame) ?
-		fimc->variant->min_inp_pixsize : fimc->variant->min_out_pixsize;
+		min_size = fimc->variant->min_out_pixsize;
 
 	/* Get pixel alignment constraints. */
 	if (fimc->variant->min_vsize_align == 1)
-		halign = fimc_fmt_is_rgb(f->fmt->color) ? 0 : 1;
+		halign = fimc_fmt_is_rgb(frame->fmt->color) ? 0 : 1;
 	else
 		halign = ffs(fimc->variant->min_vsize_align) - 1;
 
-	for (i = 0; i < f->fmt->colplanes; i++)
-		depth += f->fmt->depth[i];
+	for (i = 0; i < frame->fmt->colplanes; i++)
+		depth += frame->fmt->depth[i];
 
-	v4l_bound_align_image(&cr->c.width, min_size, f->o_width,
+#if 0
+	/* Check to see if scaling ratio is within supported range */
+	if (cr.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		ret = fimc_check_scaler_ratio(ctx, cr.c.width,
+				cr.c.height, ctx->d_frame.width,
+				ctx->d_frame.height, ctx->rotation);
+	} else {
+		ret = fimc_check_scaler_ratio(ctx, ctx->s_frame.width,
+				ctx->s_frame.height, cr.c.width,
+				cr.c.height, ctx->rotation);
+	}
+#endif
+	v4l_bound_align_image(&rect->width, min_size, frame->o_width,
 			      ffs(min_size) - 1,
-			      &cr->c.height, min_size, f->o_height,
+			      &rect->height, min_size, frame->o_height,
 			      halign, 64/(ALIGN(depth, 8)));
 
 	/* adjust left/top if cropping rectangle is out of bounds */
-	if (cr->c.left + cr->c.width > f->o_width)
-		cr->c.left = f->o_width - cr->c.width;
-	if (cr->c.top + cr->c.height > f->o_height)
-		cr->c.top = f->o_height - cr->c.height;
+	rect->left = clamp_t(u32, rect->left, 0, frame->o_width - rect->width);
+	rect->top = clamp_t(u32, rect->top, 0, frame->o_height - rect->height);
+	rect->left = round_down(rect->left, min_size);
+	rect->top  = round_down(rect->top, fimc->variant->hor_offs_align);
 
-	cr->c.left = round_down(cr->c.left, min_size);
-	cr->c.top  = round_down(cr->c.top, fimc->variant->hor_offs_align);
+	pr_debug("l: %d, t: %d, w: %d, h: %d, f_w: %d, f_h: %d",
+		 rect->left, rect->top, rect->width, rect->height,
+		 frame->f_width, frame->f_height);
+	return 0;
+}
 
-	dbg("l:%d, t:%d, w:%d, h:%d, f_w: %d, f_h: %d",
-	    cr->c.left, cr->c.top, cr->c.width, cr->c.height,
-	    f->f_width, f->f_height);
+static inline int __m2m_supported_selection(struct v4l2_selection *s)
+{
+	if (s->type ==
+	return -EINVAL;
+}
+
+static int fimc_m2m_g_selection(struct file *file, void *fh,
+				struct v4l2_selection *sel)
+{
+	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct v4l2_rect *rect = &sel->r;
+	struct fimc_frame *frame;
+
+	if (!__m2m_supported_selection(sel))
+		return -EINVAL;
+
+	frame = ctx_get_frame(ctx, sel->type);
+	if (IS_ERR(frame))
+		return PTR_ERR(frame);
+
+	switch (s->target) {
+	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
+	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
+	case V4L2_SEL_TGT_CROP_BOUNDS:
+	case V4L2_SEL_TGT_CROP_DEFAULT:
+		rect->left = 0;
+		rect->top = 0;
+		rect->width = frame->o_width;
+		rect->height = frame->o_height;
+		break;
+
+	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE:
+		rect->left = frame->offs_h;
+		rect->top = frame->offs_v;
+		rect->width = frame->width;
+		rect->height = frame->height;
+		break;
+
+	default:
+		return -EINVAL;
+	}
 
 	return 0;
 }
 
-static int fimc_m2m_s_crop(struct file *file, void *fh, const struct v4l2_crop *crop)
+static int fimc_m2m_s_selection(struct file *file, void *fh,
+				struct v4l2_selection *sel)
 {
 	struct fimc_ctx *ctx = fh_to_ctx(fh);
-	struct fimc_dev *fimc = ctx->fimc_dev;
-	struct v4l2_crop cr = *crop;
-	struct fimc_frame *f;
+	struct v4l2_rect rect = s->r;
+	struct fimc_frame *frame;
 	int ret;
 
-	ret = fimc_m2m_try_crop(ctx, &cr);
-	if (ret)
+	if (!__m2m_supported_selection(sel))
+		return -EINVAL;
+
+	frame = ctx_get_frame(ctx, sel->type);
+	if (IS_ERR(frame))
+		return PTR_ERR(frame);
+
+	ret = fimc_m2m_try_selection(ctx, frame, sel);
+	if (ret < 0)
 		return ret;
 
-	f = (cr.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) ?
-		&ctx->s_frame : &ctx->d_frame;
+	if ((s->flags & V4L2_SEL_FLAG_LE &&
+	     !v4l_enclosed_rectangle(&sel->r, &rect)) ||
+	    (s->flags & V4L2_SEL_FLAG_GE &&
+	     !v4l_enclosed_rectangle(&rect, &sel->r)))
+		return -ERANGE;
 
-	/* Check to see if scaling ratio is within supported range */
-	if (fimc_ctx_state_is_set(FIMC_DST_FMT | FIMC_SRC_FMT, ctx)) {
-		if (cr.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-			ret = fimc_check_scaler_ratio(ctx, cr.c.width,
-					cr.c.height, ctx->d_frame.width,
-					ctx->d_frame.height, ctx->rotation);
-		} else {
-			ret = fimc_check_scaler_ratio(ctx, ctx->s_frame.width,
-					ctx->s_frame.height, cr.c.width,
-					cr.c.height, ctx->rotation);
-		}
-		if (ret) {
-			v4l2_err(&fimc->m2m.vfd, "Out of scaler range\n");
-			return -EINVAL;
-		}
+	switch (s->target) {
+	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
+	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
+	case V4L2_SEL_TGT_CROP_BOUNDS:
+	case V4L2_SEL_TGT_CROP_DEFAULT:
+
+		break;
+
+	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE:
+
+		break;
+
+	default:
+		return -EINVAL;
 	}
 
-	f->offs_h = cr.c.left;
-	f->offs_v = cr.c.top;
-	f->width  = cr.c.width;
-	f->height = cr.c.height;
+	frame->offs_h = sel->r.left;
+	frame->offs_v = sel->r.top;
+	frame->width = sel->r.width;
+	frame->height = sel->r.height;
 
 	fimc_ctx_state_set(FIMC_PARAMS, ctx);
 
@@ -610,10 +650,8 @@ static const struct v4l2_ioctl_ops fimc_m2m_ioctl_ops = {
 	.vidioc_expbuf			= fimc_m2m_expbuf,
 	.vidioc_streamon		= fimc_m2m_streamon,
 	.vidioc_streamoff		= fimc_m2m_streamoff,
-	.vidioc_g_crop			= fimc_m2m_g_crop,
-	.vidioc_s_crop			= fimc_m2m_s_crop,
-	.vidioc_cropcap			= fimc_m2m_cropcap
-
+	.vidioc_g_selection		= fimc_m2m_g_selection,
+	.vidioc_s_selection		= fimc_m2m_s_selection,
 };
 
 static int queue_init(void *priv, struct vb2_queue *src_vq,

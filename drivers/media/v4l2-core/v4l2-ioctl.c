@@ -1687,6 +1687,8 @@ static int v4l_try_ext_ctrls(const struct v4l2_ioctl_ops *ops,
 static int v4l_g_crop(const struct v4l2_ioctl_ops *ops,
 				struct file *file, void *fh, void *arg)
 {
+	struct video_device *vfd = video_devdata(file);
+	bool is_m2m = vfd->vfl_dir != VFL_DIR_M2M;
 	struct v4l2_crop *p = arg;
 	struct v4l2_selection s = {
 		.type = p->type,
@@ -1714,6 +1716,8 @@ static int v4l_g_crop(const struct v4l2_ioctl_ops *ops,
 static int v4l_s_crop(const struct v4l2_ioctl_ops *ops,
 				struct file *file, void *fh, void *arg)
 {
+	struct video_device *vfd = video_devdata(file);
+	bool is_m2m = vfd->vfl_dir != VFL_DIR_M2M;
 	struct v4l2_crop *p = arg;
 	struct v4l2_selection s = {
 		.type = p->type,

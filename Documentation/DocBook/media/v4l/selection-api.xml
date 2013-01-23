@@ -79,7 +79,7 @@ linkend="v4l2-selection-flags"> constraint flags </link>.</para>
 
    <section>
 
-   <title>Configuration of video capture</title>
+   <title>Configuration of the video capture interface</title>
 
 <para>See figure <xref linkend="sel-targets-capture" /> for examples of the
 selection targets available for a video capture device.  It is recommended to
@@ -137,7 +137,7 @@ where the rubbish pixels are located and remove them if needed.</para>
 
    <section>
 
-   <title>Configuration of video output</title>
+   <title>Configuration of the video output interface</title>
 
 <para>For output devices targets and ioctls are used similarly to the video
 capture case. The <emphasis> composing </emphasis> rectangle refers to the
@@ -188,6 +188,61 @@ The padded target is accessed by the <constant> V4L2_SEL_TGT_COMPOSE_PADDED
 V4L2_SEL_TGT_COMPOSE </constant> target.</para>
 
    </section>
+
+   <section>
+
+   <title>Configuration of the video memory-to-memory interface</title>
+
+<para>For output devices targets and ioctls are used similarly to the video
+capture case. The <emphasis> composing </emphasis> rectangle refers to the
+insertion of an image into a video signal. The cropping rectangles refer to a
+memory buffer. It is recommended to configure the composing targets before to
+the cropping targets.</para>
+
+<para>The cropping targets refer to the memory buffer that contains an image to
+be inserted into a video signal or graphical screen. The limits of cropping
+coordinates are obtained using <constant> V4L2_SEL_TGT_CROP_BOUNDS </constant>.
+All coordinates are expressed in pixels. The top/left corner is always point
+<constant> (0,0) </constant>.  The width and height is equal to the image size
+specified using <constant> VIDIOC_S_FMT </constant> ioctl.</para>
+
+<para>The top left corner, width and height of the source rectangle, that is
+the area from which image date are processed by the hardware, is given by the
+<constant> V4L2_SEL_TGT_CROP </constant>. Its coordinates are expressed
+in in the same coordinate system as the bounds rectangle. The active cropping
+area must lie completely inside the crop boundaries and the driver may further
+adjust the requested size and/or position according to hardware
+limitations.</para>
+
+<para>For output devices the default cropping rectangle is queried using
+<constant> V4L2_SEL_TGT_CROP_DEFAULT </constant>. It is usually equal to the
+bounding rectangle.</para>
+
+<para>The part of a video signal or graphics display where the image is
+inserted by the hardware is controlled by <constant>
+V4L2_SEL_TGT_COMPOSE </constant> target.  The rectangle's coordinates
+are expressed in pixels. The composing rectangle must lie completely inside the
+bounds rectangle.  The driver must adjust the area to fit to the bounding
+limits.  Moreover, the driver can perform other adjustments according to
+hardware limitations. </para>
+
+<para>The device has a default composing rectangle, given by the <constant>
+V4L2_SEL_TGT_COMPOSE_DEFAULT </constant> target. This rectangle shall cover what
+the driver writer considers the complete picture. It is recommended for the
+driver developers to put the top/left corner at position <constant> (0,0)
+</constant>. Drivers shall set the active composing rectangle to the default
+one when the driver is first loaded.</para>
+
+<para>The devices may introduce additional content to video signal other than
+an image from memory buffers.  It includes borders around an image. However,
+such a padded area is driver-dependent feature not covered by this document.
+Driver developers are encouraged to keep padded rectangle equal to active one.
+The padded target is accessed by the <constant> V4L2_SEL_TGT_COMPOSE_PADDED
+</constant> identifier.  It must contain all pixels from the <constant>
+V4L2_SEL_TGT_COMPOSE </constant> target.</para>
+
+   </section>
+
 
    <section>
 

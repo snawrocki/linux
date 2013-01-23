@@ -608,27 +608,6 @@ static inline int fimc_get_alpha_mask(struct fimc_fmt *fmt)
 	};
 }
 
-static inline struct fimc_frame *ctx_get_frame(struct fimc_ctx *ctx,
-					       enum v4l2_buf_type type)
-{
-	struct fimc_frame *frame;
-
-	if (V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE == type) {
-		if (fimc_ctx_state_is_set(FIMC_CTX_M2M, ctx))
-			frame = &ctx->s_frame;
-		else
-			return ERR_PTR(-EINVAL);
-	} else if (V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE == type) {
-		frame = &ctx->d_frame;
-	} else {
-		v4l2_err(ctx->fimc_dev->v4l2_dev,
-			"Wrong buffer/video queue type (%d)\n", type);
-		return ERR_PTR(-EINVAL);
-	}
-
-	return frame;
-}
-
 /* -----------------------------------------------------*/
 /* fimc-core.c */
 int fimc_vidioc_enum_fmt_mplane(struct file *file, void *priv,
