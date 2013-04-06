@@ -58,6 +58,8 @@
 #include <plat/cpu.h>
 #include <plat/samsung-time.h>
 
+#include <media/s3c_camif.h>
+#include <media/ov9650.h>
 #include <sound/s3c24xx_uda134x.h>
 
 #include "common.h"
@@ -502,6 +504,30 @@ static struct platform_device uda1340_codec = {
 		.id = -1,
 };
 
+static struct ov9650_platform_data ov9650_platform_data = {
+	.mclk_frequency	= 24000000UL,
+	.gpio_reset	= S3C2410_GPJ(12),
+	.gpio_pwdn	= S3C2410_GPG(12),
+};
+
+static struct s3c_camif_plat_data mini2440_camif_cfg __initdata = {
+	.sensor = {
+		.i2c_board_info	= {
+			.type = "OV9650",
+			.addr = 0x60 >> 1,
+			.platform_data = &ov9650_platform_data,
+		},
+		.clock_frequency	= 24000000U,
+		.mbus_type		= V4L2_MBUS_PARALLEL,
+		.flags			= V4L2_MBUS_PCLK_SAMPLE_RISING |
+					  V4L2_MBUS_VSYNC_ACTIVE_HIGH |
+					  V4L2_MBUS_HSYNC_ACTIVE_LOW,
+		.i2c_bus_num		= 0,
+	},
+	.gpio_get = s3c_camif_gpio_get,
+	.gpio_put = s3c_camif_gpio_put,
+};
+
 static struct platform_device *mini2440_devices[] __initdata = {
 	&s3c_device_ohci,
 	&s3c_device_wdt,
@@ -534,7 +560,7 @@ static void __init mini2440_map_io(void)
  *
  * t = Touchscreen present
  * b = backlight control
- * c = camera [TODO]
+ * c = camera
  * 0-9 LCD configuration
  *
  */
@@ -671,6 +697,9 @@ static void __init mini2440_init(void)
 	s3c24xx_mci_set_platdata(&mini2440_mmc_cfg);
 	s3c_nand_set_platdata(&mini2440_nand_info);
 	s3c_i2c0_set_platdata(NULL);
+
+	s3c_set_platdata(&mini2440_camif_cfg, sizeof(mini2440_camif_cfg),
+						&s3c_device_camif);
 
 	i2c_register_board_info(0, mini2440_i2c_devs,
 				ARRAY_SIZE(mini2440_i2c_devs));
