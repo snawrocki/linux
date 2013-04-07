@@ -10,6 +10,7 @@ config PLAT_SAMSUNG
 	default y
 	select GENERIC_IRQ_CHIP
 	select NO_IOPORT
+	select ARM_CPU_SUSPEND if PM
 	help
 	  Base platform code for all Samsung SoC based systems
 
