@@ -3026,10 +3026,16 @@ static __init int samsung_gpiolib_init(void)
 	*/
 	struct device_node *pctrl_np;
 	static const struct of_device_id exynos_pinctrl_ids[] = {
+		{ .compatible = "samsung,s3c2413-pinctrl", },
+		{ .compatible = "samsung,s3c2416-pinctrl", },
+		{ .compatible = "samsung,s3c2440-pinctrl", },
+		{ .compatible = "samsung,s3c2450-pinctrl", },
+		{ .compatible = "samsung,s3c64xx-pinctrl", },
 		{ .compatible = "samsung,exynos4210-pinctrl", },
 		{ .compatible = "samsung,exynos4x12-pinctrl", },
 		{ .compatible = "samsung,exynos5250-pinctrl", },
 		{ .compatible = "samsung,exynos5440-pinctrl", },
+		{ },
 	};
 	for_each_matching_node(pctrl_np, exynos_pinctrl_ids)
 		if (pctrl_np && of_device_is_available(pctrl_np))
