@@ -16,6 +16,7 @@
 #include <linux/io.h>
 #include <linux/device.h>
 #include <linux/gpio.h>
+#include <clocksource/samsung_pwm.h>
 #include <linux/sched.h>
 #include <linux/serial_core.h>
 #include <linux/of.h>
@@ -378,6 +379,13 @@ void __init exynos_init_io(struct map_desc *mach_desc, int size)
 	s3c_init_cpu(samsung_cpu_id, cpu_ids, ARRAY_SIZE(cpu_ids));
 }
 
+static struct samsung_pwm_variant exynos4_pwm_variant = {
+	.bits		= 32,
+	.div_base	= 0,
+	.has_tint_cstat	= true,
+	.tclk_mask	= (1 << 5),
+};
+
 static void __init exynos4_map_io(void)
 {
 	iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
@@ -419,6 +427,8 @@ static void __init exynos4_map_io(void)
 	s5p_hdmi_setname("exynos4-hdmi");
 
 	s3c64xx_spi_setname("exynos4210-spi");
+
+	samsung_device_pwm.dev.platform_data = &exynos4_pwm_variant;
 }
 
 static void __init exynos5_map_io(void)

@@ -19,6 +19,7 @@
 #include <linux/io.h>
 #include <linux/device.h>
 #include <linux/serial_core.h>
+#include <clocksource/samsung_pwm.h>
 #include <linux/platform_device.h>
 #include <linux/sched.h>
 #include <linux/dma-mapping.h>
@@ -156,6 +157,13 @@ static void s5p64x0_idle(void)
 	cpu_do_idle();
 }
 
+static struct samsung_pwm_variant s5p64x0_pwm_variant = {
+	.bits		= 32,
+	.div_base	= 0,
+	.has_tint_cstat	= true,
+	.tclk_mask	= 0,
+};
+
 /*
  * s5p64x0_map_io
  *
@@ -173,6 +181,8 @@ void __init s5p64x0_init_io(struct map_desc *mach_desc, int size)
 	s5p_init_cpu(S5P64X0_SYS_ID);
 
 	s3c_init_cpu(samsung_cpu_id, cpu_ids, ARRAY_SIZE(cpu_ids));
+
+	samsung_device_pwm.dev.platform_data = &s5p64x0_pwm_variant;
 }
 
 void __init s5p6440_map_io(void)
