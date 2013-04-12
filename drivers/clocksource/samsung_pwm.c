@@ -509,6 +509,11 @@ static irqreturn_t samsung_clock_event_isr(int irq, void *dev_id)
 {
 	struct clock_event_device *evt = dev_id;
 
+	if (pwm->variant.has_tint_cstat) {
+		u32 mask = (1 << timer_source.event_id);
+		writel(mask | (mask << 5), S3C64XX_TINT_CSTAT);
+	}
+
 	evt->event_handler(evt);
 
 	return IRQ_HANDLED;
@@ -545,6 +550,11 @@ static void __init samsung_clockevent_init(void)
 
 	irq_number = pwm->irq[timer_source.event_id];
 	setup_irq(irq_number, &samsung_clock_event_irq);
+
+	if (pwm->variant.has_tint_cstat) {
+		u32 mask = (1 << timer_source.event_id);
+		writel(mask | (mask << 5), S3C64XX_TINT_CSTAT);
+	}
 }
 
 static void __iomem *samsung_timer_reg(void)
