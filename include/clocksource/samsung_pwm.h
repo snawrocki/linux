@@ -38,6 +38,7 @@ struct samsung_pwm {
 	int irq[SAMSUNG_PWM_NUM];
 };
 
+extern void samsung_pwm_clocksource_init(struct platform_device *);
 extern struct samsung_pwm *samsung_pwm_get(struct platform_device *,
 							struct device_node *);
 

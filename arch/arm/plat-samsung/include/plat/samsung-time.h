@@ -13,6 +13,10 @@
 #ifndef __ASM_PLAT_SAMSUNG_TIME_H
 #define __ASM_PLAT_SAMSUNG_TIME_H __FILE__
 
+#include <clocksource/samsung_pwm.h>
+
+#include <plat/devs.h>
+
 /* SAMSUNG HR-Timer Clock mode */
 enum samsung_timer_mode {
 	SAMSUNG_PWM0,
@@ -22,20 +26,17 @@ enum samsung_timer_mode {
 	SAMSUNG_PWM4,
 };
 
-#if defined(CONFIG_ARCH_S3C24XX) || defined(CONFIG_ARCH_S5PC100)
-#define TCNT_MAX		0xffff
-#define TSCALER_DIV		25
-#define TDIV			50
-#define TSIZE			16
-#else
-#define TCNT_MAX		0xffffffff
-#define TSCALER_DIV		2
-#define TDIV			2
-#define TSIZE			32
-#endif
+static inline void samsung_set_timer_source(enum samsung_timer_mode event,
+						enum samsung_timer_mode source)
+{
+	struct samsung_pwm_variant *variant;
 
-extern void __init samsung_set_timer_source(enum samsung_timer_mode event,
-					enum samsung_timer_mode source);
+	variant = samsung_device_pwm.dev.platform_data;
+	BUG_ON(!variant);
+
+	variant->output_mask = (1 << 5) - 1;
+	variant->output_mask &= ~((1 << event) | (1 << source));
+}
 
 extern void __init samsung_timer_init(void);
 

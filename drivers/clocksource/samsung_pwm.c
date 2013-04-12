@@ -280,7 +280,12 @@ EXPORT_SYMBOL(samsung_pwm_get);
 struct samsung_timer_source {
 	unsigned int event_id;
 	unsigned int source_id;
+	unsigned int tcnt_max;
+	unsigned int tscaler_div;
+	unsigned int tdiv;
 };
+
+static struct samsung_pwm *pwm;
 
 static struct clk *tin_event;
 static struct clk *tin_source;
@@ -473,18 +478,8 @@ static void samsung_timer_resume(void)
 	samsung_time_start(timer_source.event_id, true);
 
 	/* source timer restart */
-	samsung_time_setup(timer_source.source_id, TCNT_MAX);
+	samsung_time_setup(timer_source.source_id, timer_source.tcnt_max);
 	samsung_time_start(timer_source.source_id, true);
-}
-
-void __init samsung_set_timer_source(enum samsung_timer_mode event,
-				 enum samsung_timer_mode source)
-{
-	s3c_device_timer[event].dev.bus = &platform_bus_type;
-	s3c_device_timer[source].dev.bus = &platform_bus_type;
-
-	timer_source.event_id = event;
-	timer_source.source_id = source;
 }
 
 static struct clock_event_device time_event_device = {
@@ -522,8 +517,9 @@ static void __init samsung_clockevent_init(void)
 
 	tscaler = clk_get_parent(tdiv_event);
 
-	clk_set_rate(tscaler, pclk / TSCALER_DIV);
-	clk_set_rate(tdiv_event, pclk / TDIV);
+	clk_set_rate(tscaler, pclk / timer_source.tscaler_div);
+	clk_set_rate(tdiv_event,
+			pclk / (timer_source.tdiv * timer_source.tscaler_div));
 	clk_set_parent(tin_event, tdiv_event);
 
 	clock_rate = clk_get_rate(tin_event);
@@ -532,7 +528,7 @@ static void __init samsung_clockevent_init(void)
 	time_event_device.cpumask = cpumask_of(0);
 	clockevents_config_and_register(&time_event_device, clock_rate, 1, -1);
 
-	irq_number = timer_source.event_id + IRQ_TIMER0;
+	irq_number = pwm->irq[timer_source.event_id];
 	setup_irq(irq_number, &samsung_clock_event_irq);
 }
 
@@ -579,23 +575,29 @@ static u32 notrace samsung_read_sched_clock(void)
 
 static void __init samsung_clocksource_init(void)
 {
+	void __iomem *reg = samsung_timer_reg();
 	unsigned long pclk;
 	unsigned long clock_rate;
+	int ret;
 
 	pclk = clk_get_rate(timerclk);
 
-	clk_set_rate(tdiv_source, pclk / TDIV);
+	clk_set_rate(tdiv_source,
+			pclk / (timer_source.tdiv * timer_source.tscaler_div));
 	clk_set_parent(tin_source, tdiv_source);
 
 	clock_rate = clk_get_rate(tin_source);
 
-	samsung_time_setup(timer_source.source_id, TCNT_MAX);
+	samsung_time_setup(timer_source.source_id, timer_source.tcnt_max);
 	samsung_time_start(timer_source.source_id, true);
 
-	setup_sched_clock(samsung_read_sched_clock, TSIZE, clock_rate);
+	setup_sched_clock(samsung_read_sched_clock,
+						pwm->variant.bits, clock_rate);
 
-	if (clocksource_mmio_init(samsung_timer_reg(), "samsung_clocksource_timer",
-			clock_rate, 250, TSIZE, clocksource_mmio_readl_down))
+	ret = clocksource_mmio_init(reg, "samsung_clocksource_timer",
+					clock_rate, 250, pwm->variant.bits,
+					clocksource_mmio_readl_down);
+	if (ret)
 		panic("samsung_clocksource_timer: can't register clocksource\n");
 }
 
@@ -639,10 +641,38 @@ static void __init samsung_timer_resources(void)
 		panic("failed to get pwm-tdiv clock for source timer");
 
 	clk_enable(tin_source);
+
+	timer_source.tcnt_max = (1UL << pwm->variant.bits) - 1;
+	if (pwm->variant.bits == 16) {
+		timer_source.tscaler_div = 25;
+		timer_source.tdiv = 2;
+	} else {
+		timer_source.tscaler_div = 2;
+		timer_source.tdiv = 1;
+	}
 }
 
-void __init samsung_timer_init(void)
+void __init samsung_pwm_clocksource_init(struct platform_device *pdev)
 {
+	u8 mask;
+	int channel;
+
+	pwm = samsung_pwm_get(pdev, NULL);
+	if (IS_ERR(pwm))
+		panic("failed to get PWM device");
+
+	mask = ~pwm->variant.output_mask & ((1 << SAMSUNG_PWM_NUM) - 1);
+	channel = fls(mask) - 1;
+	if (channel < 0)
+		panic("failed to find PWM channel for clocksource");
+	timer_source.source_id = channel;
+
+	mask &= ~(1 << channel);
+	channel = fls(mask) - 1;
+	if (channel < 0)
+		panic("failed to find PWM channel for clock event");
+	timer_source.event_id = channel;
+
 	samsung_timer_resources();
 	samsung_clockevent_init();
 	samsung_clocksource_init();

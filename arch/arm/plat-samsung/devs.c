@@ -32,6 +32,8 @@
 #include <linux/platform_data/s3c-hsudc.h>
 #include <linux/platform_data/s3c-hsotg.h>
 
+#include <clocksource/samsung_pwm.h>
+
 #include <media/s5p_hdmi.h>
 
 #include <asm/irq.h>
@@ -1183,6 +1185,11 @@ struct platform_device samsung_device_pwm = {
 	.num_resources	= ARRAY_SIZE(samsung_pwm_resource),
 	.resource	= samsung_pwm_resource,
 };
+
+void samsung_timer_init(void)
+{
+	samsung_pwm_clocksource_init(&samsung_device_pwm);
+}
 
 /* RTC */
 
