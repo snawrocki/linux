@@ -24,13 +24,7 @@
 
 #include <clocksource/samsung_pwm.h>
 
-#include <asm/smp_twd.h>
-#include <asm/mach/time.h>
-#include <asm/mach/arch.h>
 #include <asm/sched_clock.h>
-
-#include <plat/devs.h>
-#include <plat/samsung-time.h>
 
 /*
  * PWM master driver
