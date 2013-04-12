@@ -299,6 +299,9 @@ static void samsung_timer_resume(void);
 static void samsung_time_stop(enum samsung_timer_mode mode)
 {
 	unsigned long tcon;
+	unsigned long flags;
+
+	spin_lock_irqsave(&pwm->slock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
 
@@ -328,11 +331,16 @@ static void samsung_time_stop(enum samsung_timer_mode mode)
 		break;
 	}
 	__raw_writel(tcon, S3C2410_TCON);
+
+	spin_unlock_irqrestore(&pwm->slock, flags);
 }
 
 static void samsung_time_setup(enum samsung_timer_mode mode, unsigned long tcnt)
 {
 	unsigned long tcon;
+	unsigned long flags;
+
+	spin_lock_irqsave(&pwm->slock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
 
@@ -372,11 +380,16 @@ static void samsung_time_setup(enum samsung_timer_mode mode, unsigned long tcnt)
 	__raw_writel(tcnt, S3C2410_TCNTB(mode));
 	__raw_writel(tcnt, S3C2410_TCMPB(mode));
 	__raw_writel(tcon, S3C2410_TCON);
+
+	spin_unlock_irqrestore(&pwm->slock, flags);
 }
 
 static void samsung_time_start(enum samsung_timer_mode mode, bool periodic)
 {
 	unsigned long tcon;
+	unsigned long flags;
+
+	spin_lock_irqsave(&pwm->slock, flags);
 
 	tcon  = __raw_readl(S3C2410_TCON);
 
@@ -436,6 +449,8 @@ static void samsung_time_start(enum samsung_timer_mode mode, bool periodic)
 		break;
 	}
 	__raw_writel(tcon, S3C2410_TCON);
+
+	spin_unlock_irqrestore(&pwm->slock, flags);
 }
 
 static int samsung_set_next_event(unsigned long cycles,
