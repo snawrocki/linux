@@ -42,7 +42,6 @@
 #include <plat/pm.h>
 #include <plat/gpio-cfg.h>
 #include <plat/irq-uart.h>
-#include <plat/irq-vic-timer.h>
 #include <plat/regs-irqtype.h>
 #include <plat/regs-serial.h>
 #include <plat/watchdog-reset.h>

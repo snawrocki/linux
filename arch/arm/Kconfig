@@ -806,7 +806,6 @@ config ARCH_S3C64XX
 	select S3C_GPIO_TRACK
 	select SAMSUNG_CLKSRC
 	select SAMSUNG_GPIOLIB_4BIT
-	select SAMSUNG_IRQ_VIC_TIMER
 	select USB_ARCH_HAS_OHCI
 	help
 	  Samsung S3C64XX series based systems
