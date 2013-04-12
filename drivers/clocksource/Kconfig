@@ -25,6 +25,13 @@ config DW_APB_TIMER_OF
 config ARMADA_370_XP_TIMER
 	bool
 
+config SAMSUNG_HRT
+	bool
+	depends on PLAT_SAMSUNG
+	select SAMSUNG_DEV_PWM
+	help
+	  Use the high resolution timer support on Samsung platforms.
+
 config SUNXI_TIMER
 	bool
 
