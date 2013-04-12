@@ -1168,6 +1168,22 @@ struct platform_device s3c_device_timer[] = {
 };
 #endif /* CONFIG_SAMSUNG_DEV_PWM */
 
+static struct resource samsung_pwm_resource[] = {
+	DEFINE_RES_IRQ(IRQ_TIMER0),
+	DEFINE_RES_IRQ(IRQ_TIMER1),
+	DEFINE_RES_IRQ(IRQ_TIMER2),
+	DEFINE_RES_IRQ(IRQ_TIMER3),
+	DEFINE_RES_IRQ(IRQ_TIMER4),
+	DEFINE_RES_MEM(SAMSUNG_PA_TIMER, SZ_4K),
+};
+
+struct platform_device samsung_device_pwm = {
+	.name		= "samsung-pwm",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(samsung_pwm_resource),
+	.resource	= samsung_pwm_resource,
+};
+
 /* RTC */
 
 #ifdef CONFIG_PLAT_S3C24XX
