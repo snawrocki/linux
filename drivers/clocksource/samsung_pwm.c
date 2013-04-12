@@ -590,12 +590,13 @@ static void __init samsung_timer_resources(void)
 	}
 }
 
-void __init samsung_pwm_clocksource_init(struct platform_device *pdev)
+static void __init __samsung_pwm_clocksource_init(
+			struct platform_device *pdev, struct device_node *np)
 {
 	u8 mask;
 	int channel;
 
-	pwm = samsung_pwm_get(pdev, NULL);
+	pwm = samsung_pwm_get(pdev, np);
 	if (IS_ERR(pwm))
 		panic("failed to get PWM device");
 
@@ -614,4 +615,22 @@ void __init samsung_pwm_clocksource_init(struct platform_device *pdev)
 	samsung_timer_resources();
 	samsung_clockevent_init();
 	samsung_clocksource_init();
+}
+
+static void __init samsung_pwm_clocksource_init_of(struct device_node *np)
+{
+	__samsung_pwm_clocksource_init(NULL, np);
+}
+CLOCKSOURCE_OF_DECLARE(s3c2410_pwm, "samsung,s3c2410-pwm",
+					samsung_pwm_clocksource_init_of);
+CLOCKSOURCE_OF_DECLARE(s3c6400_pwm, "samsung,s3c6400-pwm",
+					samsung_pwm_clocksource_init_of);
+CLOCKSOURCE_OF_DECLARE(s5p6440_pwm, "samsung,s5p6440-pwm",
+					samsung_pwm_clocksource_init_of);
+CLOCKSOURCE_OF_DECLARE(s5pc100_pwm, "samsung,s5pc100-pwm",
+					samsung_pwm_clocksource_init_of);
+
+void __init samsung_pwm_clocksource_init(struct platform_device *pdev)
+{
+	__samsung_pwm_clocksource_init(pdev, NULL);
 }
