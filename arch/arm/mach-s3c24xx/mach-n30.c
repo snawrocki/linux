@@ -35,7 +35,6 @@
 #include <linux/platform_data/fb-s3c2410.h>
 #include <linux/platform_data/leds-s3c24xx.h>
 #include <mach/regs-gpio.h>
-#include <mach/regs-lcd.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/irq.h>

@@ -27,7 +27,6 @@
 #include <mach/regs-gpio.h>
 #include <plat/regs-ac97.h>
 #include <plat/regs-dma.h>
-#include <mach/regs-lcd.h>
 #include <plat/regs-iis.h>
 #include <plat/regs-spi.h>
 

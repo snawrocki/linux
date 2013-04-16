@@ -50,7 +50,6 @@
 
 #include <linux/platform_data/fb-s3c2410.h>
 #include <mach/regs-gpio.h>
-#include <mach/regs-lcd.h>
 
 #include <plat/clock.h>
 #include <plat/cpu.h>

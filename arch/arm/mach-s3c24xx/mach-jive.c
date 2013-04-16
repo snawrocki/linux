@@ -36,7 +36,6 @@
 #include <linux/platform_data/i2c-s3c2410.h>
 
 #include <mach/regs-gpio.h>
-#include <mach/regs-lcd.h>
 #include <linux/platform_data/fb-s3c2410.h>
 
 #include <asm/mach-types.h>
