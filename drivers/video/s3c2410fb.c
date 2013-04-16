@@ -969,6 +969,8 @@ static int s3c2410fb_probe(struct platform_device *pdev)
 		goto free_video_memory;
 	}
 
+	s3c2410fb_set_par(fbinfo);
+
 	ret = register_framebuffer(fbinfo);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register framebuffer device: %d\n",
