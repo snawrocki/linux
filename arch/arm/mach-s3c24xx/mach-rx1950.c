@@ -48,7 +48,7 @@
 
 #include <sound/uda1380.h>
 
-#include <mach/fb.h>
+#include <linux/platform_data/fb-s3c2410.h>
 #include <mach/regs-gpio.h>
 #include <mach/regs-lcd.h>
 

@@ -50,7 +50,7 @@
 #include <linux/platform_data/ata-samsung_cf.h>
 #include <linux/platform_data/usb-ehci-s5p.h>
 #include <plat/fb.h>
-#include <plat/fb-s3c2410.h>
+#include <linux/platform_data/fb-s3c2410.h>
 #include <plat/hdmi.h>
 #include <linux/platform_data/hwmon-s3c.h>
 #include <linux/platform_data/i2c-s3c2410.h>

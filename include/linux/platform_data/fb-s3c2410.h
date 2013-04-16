@@ -9,8 +9,8 @@
  * published by the Free Software Foundation.
 */
 
-#ifndef __ASM_PLAT_FB_S3C2410_H
-#define __ASM_PLAT_FB_S3C2410_H __FILE__
+#ifndef __FB_S3C2410_H
+#define __FB_S3C2410_H __FILE__
 
 struct s3c2410fb_hw {
 	unsigned long	lcdcon1;
@@ -69,4 +69,4 @@ struct s3c2410fb_mach_info {
 
 extern void __init s3c24xx_fb_set_platdata(struct s3c2410fb_mach_info *);
 
-#endif /* __ASM_PLAT_FB_S3C2410_H */
+#endif /* __FB_S3C2410_H */

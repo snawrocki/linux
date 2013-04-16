@@ -34,7 +34,7 @@
 #include <asm/mach/map.h>
 
 #include <mach/hardware.h>
-#include <mach/fb.h>
+#include <linux/platform_data/fb-s3c2410.h>
 #include <asm/mach-types.h>
 
 #include <plat/regs-serial.h>
